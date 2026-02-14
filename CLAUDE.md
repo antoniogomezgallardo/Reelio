@@ -363,6 +363,6 @@ Convenciones:
 - Objetivo inmediato: construir MVP (feed + filtros + watchlist + eventos)
 - Objetivo de negocio: monetización sin paywall (ads nativos + sponsors + afiliación)
 - Stack decidido: Next.js + TypeScript (web + API routes), Postgres + Prisma
-- Progreso: esqueleto de monorepo iniciado (apps/web, packages/shared)
+- Progreso: esqueleto de monorepo iniciado (apps/web, packages/shared), Prisma inicializado con esquema MVP
 
 (Actualiza esta sección conforme avances.)

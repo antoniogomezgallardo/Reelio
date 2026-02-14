@@ -9,6 +9,9 @@
     "dev": "npm run dev -w apps/web",
     "build": "npm run build -w apps/web",
     "start": "npm run start -w apps/web",
-    "lint": "npm run lint -w apps/web"
+    "lint": "npm run lint -w apps/web",
+    "prisma:generate": "npm run prisma:generate -w apps/web",
+    "prisma:migrate": "npm run prisma:migrate -w apps/web",
+    "prisma:studio": "npm run prisma:studio -w apps/web"
   }
 }

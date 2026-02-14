@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TitleType {
+  movie
+  tv
+}
+
+enum TrailerSource {
+  youtube
+  other
+}
+
+enum TrailerKind {
+  teaser
+  trailer
+  clip
+}
+
+enum FeedbackAction {
+  like
+  dislike
+  save
+  share
+  open
+  complete
+}
+
+model User {
+  id           String          @id @default(uuid()) @db.Uuid
+  createdAt    DateTime        @default(now()) @map("created_at")
+  authProvider String?         @map("auth_provider")
+  locale       String?
+  timezone     String?
+  watchlist    UserWatchlist[]
+  feedback     UserFeedback[]
+
+  @@map("users")
+}
+
+model Title {
+  id             String           @id @default(uuid()) @db.Uuid
+  provider       String
+  providerId     String           @map("provider_id")
+  type           TitleType
+  title          String
+  originalTitle  String?          @map("original_title")
+  year           Int?
+  runtimeMinutes Int?             @map("runtime_minutes")
+  overview       String?
+  posterUrl      String?          @map("poster_url")
+  backdropUrl    String?          @map("backdrop_url")
+  countries      String[]
+  languages      String[]
+  genres         String[]
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  trailers       Trailer[]
+  people         TitlePerson[]
+  watchlist      UserWatchlist[]
+  feedback       UserFeedback[]
+  collectionItems CollectionItem[]
+
+  @@unique([provider, providerId])
+  @@map("titles")
+}
+
+model TitlePerson {
+  id         String @id @default(uuid()) @db.Uuid
+  titleId    String @map("title_id") @db.Uuid
+  personName String @map("person_name")
+  role       String
+  orderIndex Int?   @map("order_index")
+  title      Title  @relation(fields: [titleId], references: [id])
+
+  @@map("title_people")
+}
+
+model Trailer {
+  id              String        @id @default(uuid()) @db.Uuid
+  titleId         String        @map("title_id") @db.Uuid
+  source          TrailerSource
+  sourceVideoId   String        @map("source_video_id")
+  kind            TrailerKind
+  language        String?
+  durationSeconds Int?          @map("duration_seconds")
+  isOfficial      Boolean       @default(false) @map("is_official")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  title           Title         @relation(fields: [titleId], references: [id])
+  feedback        UserFeedback[]
+
+  @@map("trailers")
+}
+
+model UserWatchlist {
+  userId    String   @map("user_id") @db.Uuid
+  titleId   String   @map("title_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id])
+  title     Title    @relation(fields: [titleId], references: [id])
+
+  @@id([userId, titleId])
+  @@map("user_watchlist")
+}
+
+model UserFeedback {
+  id        String         @id @default(uuid()) @db.Uuid
+  userId    String?        @map("user_id") @db.Uuid
+  titleId   String         @map("title_id") @db.Uuid
+  trailerId String?        @map("trailer_id") @db.Uuid
+  action    FeedbackAction
+  createdAt DateTime       @default(now()) @map("created_at")
+  metadata  Json?
+  user      User?          @relation(fields: [userId], references: [id])
+  title     Title          @relation(fields: [titleId], references: [id])
+  trailer   Trailer?       @relation(fields: [trailerId], references: [id])
+
+  @@map("user_feedback")
+}
+
+model Collection {
+  id          String           @id @default(uuid()) @db.Uuid
+  slug        String           @unique
+  title       String
+  description String?
+  items       CollectionItem[]
+
+  @@map("collections")
+}
+
+model CollectionItem {
+  collectionId String     @map("collection_id") @db.Uuid
+  titleId      String     @map("title_id") @db.Uuid
+  orderIndex   Int?       @map("order_index")
+  collection   Collection @relation(fields: [collectionId], references: [id])
+  title        Title      @relation(fields: [titleId], references: [id])
+
+  @@id([collectionId, titleId])
+  @@map("collection_items")
+}

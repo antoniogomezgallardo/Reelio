@@ -15,3 +15,8 @@ Web-first MVP for a trailer discovery app. See CLAUDE.md for product context and
 - npm run build
 - npm run start
 - npm run lint
+
+## Database (Prisma + Postgres)
+1) Copy `apps/web/.env.example` to `apps/web/.env` and set `DATABASE_URL`.
+2) Run `npm run prisma:migrate` to create the schema.
+3) Run `npm run prisma:generate` after schema changes.
