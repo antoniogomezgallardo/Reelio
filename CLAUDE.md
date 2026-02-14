@@ -365,5 +365,6 @@ Convenciones:
 - Stack decidido: Next.js + TypeScript (web + API routes), Postgres + Prisma
 - Progreso: esqueleto de monorepo iniciado (apps/web, packages/shared), Prisma inicializado con esquema MVP
 - Progreso: migracion inicial aplicada en Postgres local
+- Progreso: seed local creado (200 titles + colecciones)
 
 (Actualiza esta sección conforme avances.)

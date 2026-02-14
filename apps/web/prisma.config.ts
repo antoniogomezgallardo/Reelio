@@ -9,6 +9,9 @@ export default defineConfig({
   migrations: {
     path: "prisma/migrations",
   },
+  seed: {
+    command: "node prisma/seed.mjs",
+  },
   engine: "classic",
   datasource: {
     url: env("DATABASE_URL"),
