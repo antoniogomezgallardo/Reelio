@@ -1,0 +1,36 @@
+name: MVP Story
+description: User story aligned to MVP scope
+title: "mvp: <short title>"
+labels: ["mvp"]
+body:
+  - type: textarea
+    id: story
+    attributes:
+      label: User story
+      placeholder: As a <user>, I want <capability> so that <benefit>.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why now?
+      description: Link to MVP goals or milestone.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      placeholder: "- [ ] ..."
+    validations:
+      required: true
+  - type: textarea
+    id: analytics
+    attributes:
+      label: Analytics
+      description: Events or metrics to track.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Links, mocks, or dependencies.

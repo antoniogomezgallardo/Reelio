@@ -1,0 +1,29 @@
+name: Spike
+description: Time-boxed research or investigation
+title: "spike: <short title>"
+labels: ["spike"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Research question
+      description: What are we trying to learn?
+    validations:
+      required: true
+  - type: input
+    id: timebox
+    attributes:
+      label: Timebox
+      description: e.g., 4 hours, 1 day
+    validations:
+      required: true
+  - type: textarea
+    id: approach
+    attributes:
+      label: Approach
+      description: How will we investigate?
+  - type: textarea
+    id: output
+    attributes:
+      label: Expected output
+      description: Docs, recommendations, decisions.

@@ -1,0 +1,38 @@
+name: Feature
+description: Product feature work
+title: "feat: <short title>"
+labels: ["feature"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What outcome are we trying to achieve?
+      placeholder: Short description of the user or business goal.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What is in scope and out of scope?
+      placeholder: In scope: ...\nOut of scope: ...
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: How do we know this is done?
+      placeholder: "- [ ] ..."
+    validations:
+      required: true
+  - type: textarea
+    id: analytics
+    attributes:
+      label: Analytics
+      description: Any events, metrics, or dashboards impacted?
+      placeholder: Events to add/update, expected impact.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Links, designs, or extra context.
