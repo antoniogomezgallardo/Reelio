@@ -367,5 +367,6 @@ Convenciones:
 - Progreso: migracion inicial aplicada en Postgres local
 - Progreso: seed local creado (200 titles + colecciones)
 - Progreso: endpoint de feed basico implementado (GET /api/v1/feed)
+- Progreso: UI inicial del feed (prototipo)
 
 (Actualiza esta sección conforme avances.)
