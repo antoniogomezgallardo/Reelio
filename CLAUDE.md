@@ -364,5 +364,6 @@ Convenciones:
 - Objetivo de negocio: monetización sin paywall (ads nativos + sponsors + afiliación)
 - Stack decidido: Next.js + TypeScript (web + API routes), Postgres + Prisma
 - Progreso: esqueleto de monorepo iniciado (apps/web, packages/shared), Prisma inicializado con esquema MVP
+- Progreso: migracion inicial aplicada en Postgres local
 
 (Actualiza esta sección conforme avances.)
