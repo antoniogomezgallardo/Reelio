@@ -16,6 +16,10 @@ Web-first MVP for a trailer discovery app. See CLAUDE.md for product context and
 - npm run start
 - npm run lint
 
+## API
+- GET /api/v1/feed
+	- Query: type, genres, countries, year_min, year_max, lang, cursor
+
 ## Database (Prisma + Postgres)
 1) Run Postgres with Docker: `docker compose -f infra/docker-compose.yml up -d`.
 2) Copy `apps/web/.env.example` to `apps/web/.env` and set `DATABASE_URL`.

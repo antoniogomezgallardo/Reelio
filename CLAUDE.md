@@ -366,5 +366,6 @@ Convenciones:
 - Progreso: esqueleto de monorepo iniciado (apps/web, packages/shared), Prisma inicializado con esquema MVP
 - Progreso: migracion inicial aplicada en Postgres local
 - Progreso: seed local creado (200 titles + colecciones)
+- Progreso: endpoint de feed basico implementado (GET /api/v1/feed)
 
 (Actualiza esta sección conforme avances.)
