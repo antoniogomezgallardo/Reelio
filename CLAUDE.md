@@ -368,5 +368,6 @@ Convenciones:
 - Progreso: seed local creado (200 titles + colecciones)
 - Progreso: endpoint de feed basico implementado (GET /api/v1/feed)
 - Progreso: UI inicial del feed (prototipo)
+- Docs: ARCHITECTURE.md con explicacion de arquitectura y decisiones
 
 (Actualiza esta sección conforme avances.)
