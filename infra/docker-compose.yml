@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: reelio-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: reelio
+    ports:
+      - "5432:5432"
+    volumes:
+      - reelio_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  reelio_postgres_data:
