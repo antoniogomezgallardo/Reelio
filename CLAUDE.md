@@ -370,6 +370,8 @@ Convenciones:
 - Progreso: endpoint de feed basico implementado (GET /api/v1/feed)
 - Progreso: UI inicial del feed (prototipo)
 - Progreso: filtros conectados al feed (UI + query)
+- Progreso: endpoints de watchlist implementados (GET/POST/DELETE)
+- Docs: OpenAPI disponible (openapi.yaml + /api/openapi) y Swagger UI en /api/docs
 - Docs: ARCHITECTURE.md con explicacion de arquitectura y decisiones
 
 (Actualiza esta sección conforme avances.)
