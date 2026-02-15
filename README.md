@@ -24,7 +24,7 @@ Web-first MVP for a trailer discovery app. See CLAUDE.md for product context and
 	- Query: type, genres, countries, year_min, year_max, lang, cursor
 
 ## UI
-- Feed UI (prototype) at /
+- Feed UI (prototype) at / (sidebar + viewer + details panel)
 
 ## Database (Prisma + Postgres)
 1) Run Postgres with Docker: `docker compose -f infra/docker-compose.yml up -d`.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import styles from "./page.module.css";
 
 type FeedTrailer = {
@@ -26,13 +26,15 @@ type FeedResponse = {
   next_cursor: string | null;
 };
 
-const filters = [
-  "Peliculas",
-  "Series",
-  "Thriller",
+const filters = ["Peliculas", "Series", "Thriller", "Noir", "Cine ES", "1980-1999"];
+
+const moods = [
+  "Tension",
+  "Misterio",
   "Noir",
-  "Cine ES",
-  "1980-1999",
+  "Cult",
+  "Grindhouse",
+  "Melancolia",
 ];
 
 export default function Home() {
@@ -41,6 +43,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const fetchFeed = useCallback(async (nextCursor?: string | null) => {
     const url = new URL("/api/v1/feed", window.location.origin);
@@ -66,6 +70,7 @@ export default function Home() {
         }
         setItems(data.items);
         setCursor(data.next_cursor);
+        setCurrentIndex(0);
       })
       .catch((err: unknown) => {
         if (!active) {
@@ -103,107 +108,167 @@ export default function Home() {
   };
 
   const emptyState = !loading && items.length === 0 && !error;
+  const currentItem = items[currentIndex] ?? null;
+  const trailerUrl = currentItem?.trailer?.video_id
+    ? `https://www.youtube.com/watch?v=${currentItem.trailer.video_id}`
+    : null;
+
+  const handlePrev = () => {
+    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : prev));
+  };
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev < items.length - 1 ? prev + 1 : prev));
+  };
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <div>
-          <p className={styles.kicker}>Reelio</p>
-          <h1>Un feed de trailers con criterio.</h1>
-          <p className={styles.subtitle}>
-            Descubre en segundos, filtra con intencion y guarda lo que quieres
-            ver hoy.
-          </p>
-        </div>
-        <div className={styles.heroCard}>
-          <span className={styles.heroBadge}>Preview 10-20s</span>
-          <p className={styles.heroTitle}>Sin spoilers, solo el gancho.</p>
-          <p className={styles.heroCopy}>
-            Personaliza el feed con "Mas como esto" y "Menos como esto".
-          </p>
-          <div className={styles.heroActions}>
-            <button className={styles.primary}>Explorar ahora</button>
-            <button className={styles.ghost}>Ver colecciones</button>
-          </div>
-        </div>
-      </header>
-
-      <section className={styles.filters}>
-        {filters.map((filter) => (
-          <button className={styles.filterChip} key={filter} type="button">
-            {filter}
+      <aside
+        className={`${styles.sidebar} ${menuOpen ? styles.sidebarOpen : ""}`}
+      >
+        <div className={styles.sidebarHeader}>
+          <span className={styles.brand}>Reelio</span>
+          <button
+            className={styles.menuButton}
+            type="button"
+            onClick={() => setMenuOpen(false)}
+          >
+            Cerrar
           </button>
-        ))}
-      </section>
+        </div>
+        <nav className={styles.sidebarNav}>
+          <a href="#">Mi feed</a>
+          <a href="#">Mis listas</a>
+          <a href="#">Buscar</a>
+          <a href="#">Colecciones</a>
+          <a href="#">Ajustes</a>
+        </nav>
+        <div className={styles.sidebarFooter}>
+          <p>Preview 10-20s · Sin spoilers</p>
+        </div>
+      </aside>
 
-      <main className={styles.feed}>
-        {loading && <p className={styles.state}>Cargando feed...</p>}
-        {error && <p className={styles.stateError}>{error}</p>}
-        {emptyState && (
-          <p className={styles.state}>No hay resultados con estos filtros.</p>
-        )}
+      <div className={styles.shell}>
+        <header className={styles.topbar}>
+          <button
+            className={styles.menuButton}
+            type="button"
+            onClick={() => setMenuOpen((prev) => !prev)}
+          >
+            Menu
+          </button>
+          <div className={styles.topbarTitle}>
+            <span>Feed curado</span>
+            <p>Descubre trailers con filtros y moods.</p>
+          </div>
+          <button className={styles.ghost} type="button">
+            Buscar
+          </button>
+        </header>
 
-        {items.map((item, index) => {
-          const trailerUrl = item.trailer?.video_id
-            ? `https://www.youtube.com/watch?v=${item.trailer.video_id}`
-            : null;
+        <section className={styles.filters}>
+          {filters.map((filter) => (
+            <button className={styles.filterChip} key={filter} type="button">
+              {filter}
+            </button>
+          ))}
+        </section>
 
-          return (
-            <article className={styles.card} key={item.title_id}>
-              <div className={styles.cardMedia}>
-                {item.poster_url ? (
-                  <img
-                    src={item.poster_url}
-                    alt={item.title}
-                    loading={index < 2 ? "eager" : "lazy"}
-                  />
-                ) : (
-                  <div className={styles.mediaFallback}>Sin poster</div>
-                )}
-                <div className={styles.mediaTag}>Trailer</div>
-              </div>
-              <div className={styles.cardBody}>
-                <div className={styles.cardMeta}>
-                  <span>{item.year ?? "-"}</span>
-                  <span>{item.countries.join(" · ")}</span>
-                  <span>{item.genres.slice(0, 2).join(" / ")}</span>
-                </div>
-                <h2>{item.title}</h2>
-                <p>{item.overview_short || "Sinopsis pendiente."}</p>
-                <div className={styles.cardActions}>
-                  <button className={styles.primarySmall} type="button">
-                    Guardar
-                  </button>
-                  <button className={styles.secondarySmall} type="button">
-                    Mas como esto
-                  </button>
-                  <button className={styles.secondarySmall} type="button">
-                    Menos como esto
-                  </button>
-                  {trailerUrl ? (
-                    <a className={styles.link} href={trailerUrl}>
-                      Ver trailer
-                    </a>
+        <div className={styles.content}>
+          <main className={styles.viewer}>
+            {loading && <p className={styles.state}>Cargando feed...</p>}
+            {error && <p className={styles.stateError}>{error}</p>}
+            {emptyState && (
+              <p className={styles.state}>
+                No hay resultados con estos filtros.
+              </p>
+            )}
+
+            {!loading && currentItem && (
+              <>
+                <div className={styles.trailerFrame}>
+                  {currentItem.poster_url ? (
+                    <img
+                      src={currentItem.poster_url}
+                      alt={currentItem.title}
+                    />
                   ) : (
-                    <span className={styles.muted}>Sin trailer</span>
+                    <div className={styles.mediaFallback}>Sin poster</div>
                   )}
+                  <div className={styles.mediaTag}>Trailer</div>
                 </div>
-              </div>
-            </article>
-          );
-        })}
-      </main>
+                <div className={styles.viewerControls}>
+                  <button className={styles.secondarySmall} type="button" onClick={handlePrev}>
+                    Anterior
+                  </button>
+                  <button className={styles.primarySmall} type="button" onClick={handleNext}>
+                    Siguiente
+                  </button>
+                  <div className={styles.viewerMeta}>
+                    {currentIndex + 1} / {items.length}
+                  </div>
+                </div>
+                <div className={styles.moods}>
+                  {moods.map((mood) => (
+                    <button className={styles.moodChip} key={mood} type="button">
+                      {mood}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </main>
 
-      <footer className={styles.footer}>
-        <button
-          className={styles.loadMore}
-          type="button"
-          onClick={handleLoadMore}
-          disabled={!cursor || loadingMore}
-        >
-          {loadingMore ? "Cargando..." : cursor ? "Cargar mas" : "Fin del feed"}
-        </button>
-      </footer>
+          <aside className={styles.details}>
+            <div className={styles.detailsHeader}>
+              <h2>{currentItem?.title ?? "Selecciona un trailer"}</h2>
+              <p>{currentItem?.overview_short || "Sinopsis pendiente."}</p>
+            </div>
+            <div className={styles.detailsMeta}>
+              <span>{currentItem?.year ?? "-"}</span>
+              <span>{currentItem?.countries.join(" · ") ?? "-"}</span>
+              <span>{currentItem?.genres.slice(0, 2).join(" / ") ?? "-"}</span>
+            </div>
+            <div className={styles.detailsActions}>
+              <button className={styles.primarySmall} type="button">
+                Guardar en lista
+              </button>
+              <button className={styles.secondarySmall} type="button">
+                Mas como esto
+              </button>
+              <button className={styles.secondarySmall} type="button">
+                Menos como esto
+              </button>
+              {trailerUrl ? (
+                <a className={styles.link} href={trailerUrl}>
+                  Ver trailer
+                </a>
+              ) : (
+                <span className={styles.muted}>Sin trailer</span>
+              )}
+            </div>
+            <div className={styles.detailsFilters}>
+              <h3>Filtros activos</h3>
+              <div className={styles.detailsTags}>
+                {filters.slice(0, 3).map((filter) => (
+                  <span key={filter}>{filter}</span>
+                ))}
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <footer className={styles.footer}> 
+          <button
+            className={styles.loadMore}
+            type="button"
+            onClick={handleLoadMore}
+            disabled={!cursor || loadingMore}
+          >
+            {loadingMore ? "Cargando..." : cursor ? "Cargar mas" : "Fin del feed"}
+          </button>
+        </footer>
+      </div>
     </div>
   );
 }
