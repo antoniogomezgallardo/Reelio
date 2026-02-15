@@ -139,6 +139,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [filterState, setFilterState] = useState<FilterState>(initialFilters);
   const [identity, setIdentity] = useState<{
     guestId: string;
@@ -338,7 +339,11 @@ export default function Home() {
     return () => {
       active = false;
     };
-  }, [fetchFeed]);
+  }, [fetchFeed, reloadKey]);
+
+  const handleRetry = () => {
+    setReloadKey((prev) => prev + 1);
+  };
 
   const handleLoadMore = async () => {
     if (!cursor || loadingMore) {
@@ -726,11 +731,37 @@ export default function Home() {
 
         <div className={styles.content}>
           <main className={styles.viewer}>
-            {loading && <p className={styles.state}>Cargando feed...</p>}
-            {error && <p className={styles.stateError}>{error}</p>}
-            {emptyState && (
+            {loading && (
+              <div className={styles.skeletonViewer}>
+                <div className={styles.skeletonPoster} />
+                <div className={styles.skeletonRow}>
+                  <span className={styles.skeletonChip} />
+                  <span className={styles.skeletonChip} />
+                </div>
+                <div className={styles.skeletonRow}>
+                  <span className={styles.skeletonPill} />
+                  <span className={styles.skeletonPill} />
+                  <span className={styles.skeletonPill} />
+                </div>
+              </div>
+            )}
+            {!loading && error && (
+              <div className={styles.stateBlock}>
+                <p className={styles.stateError}>
+                  No pudimos cargar el feed. Reintenta en unos segundos.
+                </p>
+                <button
+                  className={styles.retryButton}
+                  type="button"
+                  onClick={handleRetry}
+                >
+                  Reintentar
+                </button>
+              </div>
+            )}
+            {!loading && emptyState && (
               <p className={styles.state}>
-                No hay resultados con estos filtros.
+                No hay resultados con estos filtros. Prueba a quitar algun filtro.
               </p>
             )}
 
@@ -775,82 +806,106 @@ export default function Home() {
           </main>
 
           <aside className={styles.details}>
-            <div className={styles.detailsHeader}>
-              <h2>{currentItem?.title ?? "Selecciona un trailer"}</h2>
-              <p>{currentItem?.overview_short || "Sinopsis pendiente."}</p>
-            </div>
-            <div className={styles.detailsMeta}>
-              <span>{currentItem?.year ?? "-"}</span>
-              <span>{currentItem?.countries.join(" · ") ?? "-"}</span>
-              <span>{currentItem?.genres.slice(0, 2).join(" / ") ?? "-"}</span>
-            </div>
-            <div className={styles.detailsActions}>
-              <button
-                className={`${styles.primarySmall} ${
-                  isSaved ? styles.actionActive : ""
-                }`}
-                type="button"
-                onClick={handleSaveToggle}
-              >
-                {isSaved ? "En lista" : "Guardar en lista"}
-              </button>
-              <button
-                className={`${styles.secondarySmall} ${
-                  currentFeedback === "like" ? styles.actionActive : ""
-                }`}
-                type="button"
-                onClick={() => handleFeedback("like")}
-              >
-                Mas como esto
-              </button>
-              <button
-                className={`${styles.secondarySmall} ${
-                  currentFeedback === "dislike" ? styles.actionActive : ""
-                }`}
-                type="button"
-                onClick={() => handleFeedback("dislike")}
-              >
-                Menos como esto
-              </button>
-              <button
-                className={styles.secondarySmall}
-                type="button"
-                onClick={handleShare}
-              >
-                Compartir
-              </button>
-              {trailerUrl ? (
-                <a
-                  className={styles.link}
-                  href={trailerUrl}
-                  onClick={() =>
-                    sendEvents([
-                      {
-                        name: "trailer_play",
-                        title_id: currentItem?.title_id,
-                        position_in_feed: currentIndex + 1
-                      }
-                    ])
-                  }
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Ver trailer
-                </a>
-              ) : (
-                <span className={styles.muted}>Sin trailer</span>
-              )}
-            </div>
-            <div className={styles.detailsFilters}>
-              <h3>Filtros activos</h3>
-              <div className={styles.detailsTags}>
-                {activeFilters.length > 0 ? (
-                  activeFilters.map((filter) => <span key={filter}>{filter}</span>)
-                ) : (
-                  <span>Sin filtros</span>
-                )}
+            {loading ? (
+              <div className={styles.skeletonDetails}>
+                <div className={styles.skeletonTitle} />
+                <div className={styles.skeletonLine} />
+                <div className={styles.skeletonLineShort} />
+                <div className={styles.skeletonRow}>
+                  <span className={styles.skeletonChip} />
+                  <span className={styles.skeletonChip} />
+                </div>
+                <div className={styles.skeletonRow}>
+                  <span className={styles.skeletonPill} />
+                  <span className={styles.skeletonPill} />
+                </div>
               </div>
-            </div>
+            ) : (
+              <>
+                <div className={styles.detailsHeader}>
+                  <h2>{currentItem?.title ?? "Selecciona un trailer"}</h2>
+                  <p>{currentItem?.overview_short || "Sinopsis pendiente."}</p>
+                </div>
+                <div className={styles.detailsMeta}>
+                  <span>{currentItem?.year ?? "-"}</span>
+                  <span>{currentItem?.countries.join(" · ") ?? "-"}</span>
+                  <span>{currentItem?.genres.slice(0, 2).join(" / ") ?? "-"}</span>
+                </div>
+                <div className={styles.detailsActions}>
+                  <button
+                    className={`${styles.primarySmall} ${
+                      isSaved ? styles.actionActive : ""
+                    }`}
+                    type="button"
+                    onClick={handleSaveToggle}
+                    disabled={!currentItem}
+                  >
+                    {isSaved ? "En lista" : "Guardar en lista"}
+                  </button>
+                  <button
+                    className={`${styles.secondarySmall} ${
+                      currentFeedback === "like" ? styles.actionActive : ""
+                    }`}
+                    type="button"
+                    onClick={() => handleFeedback("like")}
+                    disabled={!currentItem}
+                  >
+                    Mas como esto
+                  </button>
+                  <button
+                    className={`${styles.secondarySmall} ${
+                      currentFeedback === "dislike" ? styles.actionActive : ""
+                    }`}
+                    type="button"
+                    onClick={() => handleFeedback("dislike")}
+                    disabled={!currentItem}
+                  >
+                    Menos como esto
+                  </button>
+                  <button
+                    className={styles.secondarySmall}
+                    type="button"
+                    onClick={handleShare}
+                    disabled={!currentItem}
+                  >
+                    Compartir
+                  </button>
+                  {trailerUrl ? (
+                    <a
+                      className={styles.link}
+                      href={trailerUrl}
+                      onClick={() =>
+                        sendEvents([
+                          {
+                            name: "trailer_play",
+                            title_id: currentItem?.title_id,
+                            position_in_feed: currentIndex + 1
+                          }
+                        ])
+                      }
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Ver trailer
+                    </a>
+                  ) : (
+                    <span className={styles.muted}>Sin trailer</span>
+                  )}
+                </div>
+                <div className={styles.detailsFilters}>
+                  <h3>Filtros activos</h3>
+                  <div className={styles.detailsTags}>
+                    {activeFilters.length > 0 ? (
+                      activeFilters.map((filter) => (
+                        <span key={filter}>{filter}</span>
+                      ))
+                    ) : (
+                      <span>Sin filtros</span>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </aside>
         </div>
 
