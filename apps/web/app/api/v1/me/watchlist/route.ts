@@ -59,6 +59,7 @@ export async function GET(request: Request) {
   const userId = parseUserId(request);
 
   if (!userId) {
+    console.warn("Watchlist missing user_id", { url: request.url });
     return NextResponse.json(
       { error: "Missing user_id" },
       { status: 400 }
@@ -98,7 +99,11 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ items });
   } catch (error) {
-    console.error("Watchlist query failed", error);
+    console.error("Watchlist query failed", {
+      error,
+      url: request.url,
+      userId
+    });
     return NextResponse.json(
       { error: "Failed to load watchlist." },
       { status: 500 }

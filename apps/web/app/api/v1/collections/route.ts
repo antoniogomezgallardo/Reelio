@@ -52,7 +52,7 @@ function toOverviewShort(overview?: string | null): string {
   return `${overview.slice(0, 157)}...`;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const collections = await prisma.collection.findMany({
       orderBy: { title: "asc" },
@@ -97,7 +97,10 @@ export async function GET() {
 
     return NextResponse.json({ collections: response });
   } catch (error) {
-    console.error("Collections query failed", error);
+    console.error("Collections query failed", {
+      error,
+      url: request.url
+    });
     return NextResponse.json(
       { error: "Failed to load collections." },
       { status: 500 }

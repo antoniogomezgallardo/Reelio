@@ -25,6 +25,10 @@ export async function POST(request: Request, { params }: Params) {
   const titleId = params.title_id;
 
   if (!userId) {
+    console.warn("Watchlist add missing user_id", {
+      url: request.url,
+      titleId
+    });
     return NextResponse.json(
       { error: "Missing user_id" },
       { status: 400 }
@@ -45,7 +49,12 @@ export async function POST(request: Request, { params }: Params) {
       title_id: entry.titleId
     });
   } catch (error) {
-    console.error("Watchlist add failed", error);
+    console.error("Watchlist add failed", {
+      error,
+      url: request.url,
+      userId,
+      titleId
+    });
     return NextResponse.json(
       { error: "Failed to add watchlist item." },
       { status: 500 }
@@ -58,6 +67,10 @@ export async function DELETE(request: Request, { params }: Params) {
   const titleId = params.title_id;
 
   if (!userId) {
+    console.warn("Watchlist remove missing user_id", {
+      url: request.url,
+      titleId
+    });
     return NextResponse.json(
       { error: "Missing user_id" },
       { status: 400 }
@@ -74,7 +87,12 @@ export async function DELETE(request: Request, { params }: Params) {
       title_id: titleId
     });
   } catch (error) {
-    console.error("Watchlist remove failed", error);
+    console.error("Watchlist remove failed", {
+      error,
+      url: request.url,
+      userId,
+      titleId
+    });
     return NextResponse.json(
       { error: "Failed to remove watchlist item." },
       { status: 500 }

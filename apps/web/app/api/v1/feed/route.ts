@@ -150,7 +150,10 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ items: feedItems, next_cursor: nextCursor });
   } catch (error) {
-    console.error("Feed query failed", error);
+    console.error("Feed query failed", {
+      error,
+      url: request.url
+    });
     return NextResponse.json(
       { error: "Failed to load feed." },
       { status: 500 }

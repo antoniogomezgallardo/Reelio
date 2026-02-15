@@ -61,6 +61,7 @@ export async function GET(request: Request, { params }: Params) {
   const titleId = params?.title_id ?? pathname.split("/").pop() ?? "";
 
   if (!titleId) {
+    console.warn("Title lookup missing id", { url: request.url });
     return NextResponse.json(
       { error: "Missing title_id" },
       { status: 400 }
@@ -102,7 +103,11 @@ export async function GET(request: Request, { params }: Params) {
 
     return NextResponse.json({ item });
   } catch (error) {
-    console.error("Title lookup failed", error);
+    console.error("Title lookup failed", {
+      error,
+      url: request.url,
+      titleId
+    });
     return NextResponse.json(
       { error: "Failed to load title." },
       { status: 500 }
