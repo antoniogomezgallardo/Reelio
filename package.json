@@ -11,9 +11,26 @@
     "build": "npm run build -w apps/web",
     "start": "npm run start -w apps/web",
     "lint": "npm run lint -w apps/web",
+    "format": "npm run format -w apps/web",
+    "format:write": "npm run format:write -w apps/web",
+    "typecheck": "npm run typecheck -w apps/web",
+    "check": "npm run format && npm run lint && npm run typecheck",
+    "prepare": "husky install",
     "prisma:generate": "npm run prisma:generate -w apps/web",
     "prisma:migrate": "npm run prisma:migrate -w apps/web",
     "prisma:studio": "npm run prisma:studio -w apps/web",
     "prisma:seed": "npm run prisma:seed -w apps/web"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,css,md}": [
+      "prettier --write"
+    ],
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix"
+    ]
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3"
   }
 }

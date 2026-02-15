@@ -4,7 +4,8 @@ Web-first MVP for a trailer discovery app. See CLAUDE.md for product context and
 
 ## Stack
 - Next.js + TypeScript (web + API routes)
-- Postgres + Prisma (planned for M1 DB setup)
+- Postgres + Prisma (local Docker for dev)
+- OpenAPI for contract + Swagger UI
 
 ## Docs
 - Architecture and decisions: ARCHITECTURE.md
@@ -14,14 +15,25 @@ Web-first MVP for a trailer discovery app. See CLAUDE.md for product context and
 - packages/shared: shared types/utilities
 
 ## Commands
+- npm run dev:stop
 - npm run dev
 - npm run build
 - npm run start
 - npm run lint
+- npm run format
+- npm run format:write
+- npm run typecheck
+- npm run check
+- npm run prisma:generate
+- npm run prisma:migrate
+- npm run prisma:studio
+- npm run prisma:seed
 
 ## API
 - GET /api/v1/feed
 	- Query: type, genres, countries, year_min, year_max, lang, cursor
+- GET /api/v1/titles/:title_id
+- GET /api/v1/collections
 - GET /api/v1/me/watchlist?user_id=...
 - POST /api/v1/me/watchlist/:title_id?user_id=...
 - DELETE /api/v1/me/watchlist/:title_id?user_id=...
@@ -40,6 +52,7 @@ per-session `session_id` (sessionStorage), both sent with every event.
 ## UI
 - Feed UI (prototype) at / (sidebar + viewer + details panel)
 - Details actions are wired to events + watchlist: save, like/dislike, share
+- Teaser mode toggle (30s) and deep link support via ?t=title_id
 
 ## Database (Prisma + Postgres)
 1) Run Postgres with Docker: `docker compose -f infra/docker-compose.yml up -d`.
