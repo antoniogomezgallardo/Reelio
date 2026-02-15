@@ -448,9 +448,11 @@ Convenciones:
 - Progreso: acciones UI (guardar, like/dislike, share) conectadas a eventos
 - Progreso: guest_id persistente + session_id por sesion para analitica y watchlist
 - Progreso: estado inicial de watchlist cargado en UI
+- Progreso: heuristica simple de diversidad aplicada en el orden del feed
 - Progreso: deep links con ?t=title_id para compartir cards
 - Progreso: teaser mode con toggle 30s en la topbar
 - Progreso: logging basico en API + UI error boundary
+- Progreso: posters servidos con next/image (host TMDB allowlisted)
 - Docs: OpenAPI disponible (openapi.yaml + /api/openapi) y Swagger UI en /api/docs
 - Docs: ARCHITECTURE.md con explicacion de arquitectura y decisiones
 - Docs: docs/spikes/metadata-provider.md con propuesta de provider
