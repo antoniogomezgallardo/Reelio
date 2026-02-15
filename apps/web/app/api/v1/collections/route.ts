@@ -1,27 +1,29 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 const ITEMS_TAKE = 10;
 
 function getTrailerPriority(kind: string): number {
   switch (kind) {
-    case "trailer":
+    case 'trailer':
       return 3;
-    case "teaser":
+    case 'teaser':
       return 2;
-    case "clip":
+    case 'clip':
       return 1;
     default:
       return 0;
   }
 }
 
-function pickBestTrailer(trailers: {
-  source: string;
-  sourceVideoId: string;
-  kind: string;
-  isOfficial: boolean;
-}[]) {
+function pickBestTrailer(
+  trailers: {
+    source: string;
+    sourceVideoId: string;
+    kind: string;
+    isOfficial: boolean;
+  }[],
+) {
   if (trailers.length === 0) {
     return null;
   }
@@ -34,17 +36,20 @@ function pickBestTrailer(trailers: {
   });
 
   const trailer = sorted[0];
+  if (!trailer) {
+    return null;
+  }
   return {
     source: trailer.source,
     video_id: trailer.sourceVideoId,
     kind: trailer.kind,
-    is_official: trailer.isOfficial
+    is_official: trailer.isOfficial,
   };
 }
 
 function toOverviewShort(overview?: string | null): string {
   if (!overview) {
-    return "";
+    return '';
   }
   if (overview.length <= 160) {
     return overview;
@@ -55,10 +60,10 @@ function toOverviewShort(overview?: string | null): string {
 export async function GET(request: Request) {
   try {
     const collections = await prisma.collection.findMany({
-      orderBy: { title: "asc" },
+      orderBy: { title: 'asc' },
       include: {
         items: {
-          orderBy: { orderIndex: "asc" },
+          orderBy: { orderIndex: 'asc' },
           take: ITEMS_TAKE,
           include: {
             title: {
@@ -68,14 +73,14 @@ export async function GET(request: Request) {
                     source: true,
                     sourceVideoId: true,
                     kind: true,
-                    isOfficial: true
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+                    isOfficial: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
     const response = collections.map((collection) => ({
@@ -91,19 +96,19 @@ export async function GET(request: Request) {
         genres: entry.title.genres,
         overview_short: toOverviewShort(entry.title.overview),
         poster_url: entry.title.posterUrl,
-        trailer: pickBestTrailer(entry.title.trailers)
-      }))
+        trailer: pickBestTrailer(entry.title.trailers),
+      })),
     }));
 
     return NextResponse.json({ collections: response });
   } catch (error) {
-    console.error("Collections query failed", {
+    console.error('Collections query failed', {
       error,
-      url: request.url
+      url: request.url,
     });
     return NextResponse.json(
-      { error: "Failed to load collections." },
-      { status: 500 }
+      { error: 'Failed to load collections.' },
+      { status: 500 },
     );
   }
 }

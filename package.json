@@ -23,10 +23,10 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,css,md}": [
-      "prettier --write"
+      "npm exec -w apps/web -- prettier --write"
     ],
     "*.{js,jsx,ts,tsx}": [
-      "eslint --fix"
+      "npm exec -w apps/web -- eslint --fix"
     ]
   },
   "devDependencies": {

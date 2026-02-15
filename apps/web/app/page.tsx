@@ -1,8 +1,9 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import styles from "./page.module.css";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
+import { useSearchParams } from 'next/navigation';
+import styles from './page.module.css';
 
 type FeedTrailer = {
   source: string;
@@ -51,50 +52,52 @@ type AnalyticsEvent = {
 };
 
 const typeOptions = [
-  { label: "Peliculas", value: "movie" },
-  { label: "Series", value: "tv" },
-];
+  { label: 'Peliculas', value: 'movie' },
+  { label: 'Series', value: 'tv' },
+] as const;
+
+type TypeOptionValue = (typeof typeOptions)[number]['value'];
 
 const genreOptions = [
-  { label: "Thriller", value: "thriller" },
-  { label: "Noir", value: "noir" },
-  { label: "Drama", value: "drama" },
-  { label: "Horror", value: "horror" },
-  { label: "Misterio", value: "mystery" },
+  { label: 'Thriller', value: 'thriller' },
+  { label: 'Noir', value: 'noir' },
+  { label: 'Drama', value: 'drama' },
+  { label: 'Horror', value: 'horror' },
+  { label: 'Misterio', value: 'mystery' },
 ];
 
 const countryOptions = [
-  { label: "ES", value: "ES" },
-  { label: "US", value: "US" },
-  { label: "FR", value: "FR" },
-  { label: "IT", value: "IT" },
+  { label: 'ES', value: 'ES' },
+  { label: 'US', value: 'US' },
+  { label: 'FR', value: 'FR' },
+  { label: 'IT', value: 'IT' },
 ];
 
 const languageOptions = [
-  { label: "ES", value: "es" },
-  { label: "EN", value: "en" },
-  { label: "FR", value: "fr" },
-  { label: "IT", value: "it" },
+  { label: 'ES', value: 'es' },
+  { label: 'EN', value: 'en' },
+  { label: 'FR', value: 'fr' },
+  { label: 'IT', value: 'it' },
 ];
 
 const yearOptions = [
-  { label: "1980-1999", min: 1980, max: 1999, value: "1980-1999" },
-  { label: "2000-2010", min: 2000, max: 2010, value: "2000-2010" },
-  { label: "2011-2020", min: 2011, max: 2020, value: "2011-2020" },
-  { label: "2021-2025", min: 2021, max: 2025, value: "2021-2025" },
+  { label: '1980-1999', min: 1980, max: 1999, value: '1980-1999' },
+  { label: '2000-2010', min: 2000, max: 2010, value: '2000-2010' },
+  { label: '2011-2020', min: 2011, max: 2020, value: '2011-2020' },
+  { label: '2021-2025', min: 2021, max: 2025, value: '2021-2025' },
 ];
 
 const moods = [
-  "Tension",
-  "Misterio",
-  "Noir",
-  "Cult",
-  "Grindhouse",
-  "Melancolia",
+  'Tension',
+  'Misterio',
+  'Noir',
+  'Cult',
+  'Grindhouse',
+  'Melancolia',
 ];
 
 type FilterState = {
-  type: "all" | "movie" | "tv";
+  type: 'all' | 'movie' | 'tv';
   genres: string[];
   countries: string[];
   languages: string[];
@@ -102,36 +105,41 @@ type FilterState = {
 };
 
 const initialFilters: FilterState = {
-  type: "all",
+  type: 'all',
   genres: [],
   countries: [],
   languages: [],
   year: null,
 };
 
-const labelFor = (options: { label: string; value: string }[], value: string) =>
-  options.find((option) => option.value === value)?.label ?? value;
+const labelFor = (
+  options: ReadonlyArray<{ label: string; value: string }>,
+  value: string,
+) => options.find((option) => option.value === value)?.label ?? value;
 
-const guestIdStorageKey = "reelio_guest_id";
-const sessionIdStorageKey = "reelio_session_id";
-const teaserStorageKey = "reelio_teaser_mode";
+const guestIdStorageKey = 'reelio_guest_id';
+const sessionIdStorageKey = 'reelio_session_id';
+const teaserStorageKey = 'reelio_teaser_mode';
 const teaserSeconds = 30;
 
 const createId = () => {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID();
   }
 
-  const bytes = Array.from({ length: 16 }, () =>
-    Math.floor(Math.random() * 256)
-  );
-  bytes[6] = (bytes[6] & 0x0f) | 0x40;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const bytes = new Uint8Array(16);
+  for (let i = 0; i < bytes.length; i += 1) {
+    bytes[i] = Math.floor(Math.random() * 256);
+  }
+  const b6 = bytes[6] ?? 0;
+  const b8 = bytes[8] ?? 0;
+  bytes[6] = (b6 & 0x0f) | 0x40;
+  bytes[8] = (b8 & 0x3f) | 0x80;
 
-  const hex = bytes.map((byte) => byte.toString(16).padStart(2, "0"));
-  return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0'));
+  return `${hex.slice(0, 4).join('')}-${hex.slice(4, 6).join('')}-${hex
     .slice(6, 8)
-    .join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10, 16).join("")}`;
+    .join('')}-${hex.slice(8, 10).join('')}-${hex.slice(10, 16).join('')}`;
 };
 
 const getOrCreateId = (storage: Storage, key: string) => {
@@ -160,40 +168,40 @@ export default function Home() {
     sessionId: string;
   } | null>(null);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
-  const [feedback, setFeedback] = useState<Record<string, "like" | "dislike">>(
-    {}
+  const [feedback, setFeedback] = useState<Record<string, 'like' | 'dislike'>>(
+    {},
   );
-  const [collections, setCollections] = useState<CollectionResponse["collections"]>(
-    []
-  );
+  const [collections, setCollections] = useState<
+    CollectionResponse['collections']
+  >([]);
   const [collectionsLoading, setCollectionsLoading] = useState(true);
   const [collectionsError, setCollectionsError] = useState<string | null>(null);
   const [teaserMode, setTeaserMode] = useState(false);
   const previousFilterRef = useRef<string | null>(null);
 
   const sharedTitleId = useMemo(() => {
-    const value = searchParams.get("t");
+    const value = searchParams.get('t');
     return value && value.trim().length > 0 ? value.trim() : null;
   }, [searchParams]);
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
 
-    if (filterState.type !== "all") {
-      params.set("type", filterState.type);
+    if (filterState.type !== 'all') {
+      params.set('type', filterState.type);
     }
     if (filterState.genres.length > 0) {
-      params.set("genres", filterState.genres.join(","));
+      params.set('genres', filterState.genres.join(','));
     }
     if (filterState.countries.length > 0) {
-      params.set("countries", filterState.countries.join(","));
+      params.set('countries', filterState.countries.join(','));
     }
     if (filterState.languages.length > 0) {
-      params.set("lang", filterState.languages.join(","));
+      params.set('lang', filterState.languages.join(','));
     }
     if (filterState.year) {
-      params.set("year_min", String(filterState.year.min));
-      params.set("year_max", String(filterState.year.max));
+      params.set('year_min', String(filterState.year.min));
+      params.set('year_max', String(filterState.year.max));
     }
 
     return params.toString();
@@ -201,36 +209,36 @@ export default function Home() {
 
   const fetchFeed = useCallback(
     async (nextCursor?: string | null) => {
-      const url = new URL("/api/v1/feed", window.location.origin);
+      const url = new URL('/api/v1/feed', window.location.origin);
       if (queryString) {
         url.search = queryString;
       }
       if (nextCursor) {
-        url.searchParams.set("cursor", nextCursor);
+        url.searchParams.set('cursor', nextCursor);
       }
 
       const response = await fetch(url.toString());
       if (!response.ok) {
-        throw new Error("No se pudo cargar el feed.");
+        throw new Error('No se pudo cargar el feed.');
       }
 
       return (await response.json()) as FeedResponse;
     },
-    [queryString]
+    [queryString],
   );
 
   const fetchTitleById = useCallback(async (titleId: string) => {
     const response = await fetch(`/api/v1/titles/${titleId}`);
     if (!response.ok) {
-      throw new Error("No se pudo cargar el titulo.");
+      throw new Error('No se pudo cargar el titulo.');
     }
     return (await response.json()) as { item: FeedItem };
   }, []);
 
   const fetchCollections = useCallback(async () => {
-    const response = await fetch("/api/v1/collections");
+    const response = await fetch('/api/v1/collections');
     if (!response.ok) {
-      throw new Error("No se pudieron cargar las colecciones.");
+      throw new Error('No se pudieron cargar las colecciones.');
     }
     return (await response.json()) as CollectionResponse;
   }, []);
@@ -243,7 +251,7 @@ export default function Home() {
 
   useEffect(() => {
     const stored = localStorage.getItem(teaserStorageKey);
-    setTeaserMode(stored === "true");
+    setTeaserMode(stored === 'true');
   }, []);
 
   useEffect(() => {
@@ -263,7 +271,7 @@ export default function Home() {
         if (!active) {
           return;
         }
-        const message = err instanceof Error ? err.message : "Error inesperado";
+        const message = err instanceof Error ? err.message : 'Error inesperado';
         setCollectionsError(message);
       })
       .finally(() => {
@@ -288,11 +296,11 @@ export default function Home() {
       try {
         const response = await fetch(
           `/api/v1/me/watchlist?user_id=${identity.guestId}`,
-          { signal: controller.signal }
+          { signal: controller.signal },
         );
 
         if (!response.ok) {
-          throw new Error("No se pudo cargar la watchlist.");
+          throw new Error('No se pudo cargar la watchlist.');
         }
 
         const data = (await response.json()) as {
@@ -301,10 +309,10 @@ export default function Home() {
 
         setSavedIds(new Set(data.items.map((item) => item.title_id)));
       } catch (err: unknown) {
-        if (err instanceof DOMException && err.name === "AbortError") {
+        if (err instanceof DOMException && err.name === 'AbortError') {
           return;
         }
-        const message = err instanceof Error ? err.message : "Error inesperado";
+        const message = err instanceof Error ? err.message : 'Error inesperado';
         setError(message);
       }
     };
@@ -328,30 +336,30 @@ export default function Home() {
           session_id: event.session_id ?? identity.sessionId,
           guest_id: event.guest_id ?? identity.guestId,
           timestamp: event.timestamp ?? new Date().toISOString(),
-          active_filters: event.active_filters ?? filterState
-        }))
+          active_filters: event.active_filters ?? filterState,
+        })),
       };
 
       try {
-        if ("sendBeacon" in navigator) {
+        if ('sendBeacon' in navigator) {
           const blob = new Blob([JSON.stringify(payload)], {
-            type: "application/json"
+            type: 'application/json',
           });
-          navigator.sendBeacon("/api/v1/events", blob);
+          navigator.sendBeacon('/api/v1/events', blob);
           return;
         }
 
-        await fetch("/api/v1/events", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        await fetch('/api/v1/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
-          keepalive: true
+          keepalive: true,
         });
       } catch (err) {
-        console.warn("Failed to send analytics event", err);
+        console.warn('Failed to send analytics event', err);
       }
     },
-    [filterState, identity]
+    [filterState, identity],
   );
 
   useEffect(() => {
@@ -359,30 +367,32 @@ export default function Home() {
       return;
     }
 
-    sendEvents([{ name: "app_open" }]);
+    sendEvents([{ name: 'app_open' }]);
   }, [identity, sendEvents]);
 
   const filterSignature = useMemo(
     () => JSON.stringify(filterState),
-    [filterState]
+    [filterState],
   );
 
   useEffect(() => {
-    if (previousFilterRef.current && previousFilterRef.current !== filterSignature) {
+    if (
+      previousFilterRef.current &&
+      previousFilterRef.current !== filterSignature
+    ) {
       sendEvents([
         {
-          name: "filter_change",
+          name: 'filter_change',
           active_filters: filterState,
           metadata: {
-            previous: JSON.parse(previousFilterRef.current)
-          }
-        }
+            previous: JSON.parse(previousFilterRef.current),
+          },
+        },
       ]);
     }
 
     previousFilterRef.current = filterSignature;
   }, [filterSignature, filterState, sendEvents]);
-
 
   useEffect(() => {
     if (sharedTitleId) {
@@ -408,7 +418,7 @@ export default function Home() {
         if (!active) {
           return;
         }
-        const message = err instanceof Error ? err.message : "Error inesperado";
+        const message = err instanceof Error ? err.message : 'Error inesperado';
         setError(message);
       })
       .finally(() => {
@@ -446,7 +456,7 @@ export default function Home() {
         if (!active) {
           return;
         }
-        const message = err instanceof Error ? err.message : "Error inesperado";
+        const message = err instanceof Error ? err.message : 'Error inesperado';
         setError(message);
       })
       .finally(() => {
@@ -474,7 +484,7 @@ export default function Home() {
       setItems((prev) => [...prev, ...data.items]);
       setCursor(data.next_cursor);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Error inesperado";
+      const message = err instanceof Error ? err.message : 'Error inesperado';
       setError(message);
     } finally {
       setLoadingMore(false);
@@ -494,8 +504,8 @@ export default function Home() {
       return trailerUrl;
     }
     const url = new URL(trailerUrl);
-    url.searchParams.set("start", "0");
-    url.searchParams.set("end", String(teaserSeconds));
+    url.searchParams.set('start', '0');
+    url.searchParams.set('end', String(teaserSeconds));
     return url.toString();
   }, [teaserMode, trailerUrl]);
 
@@ -506,10 +516,10 @@ export default function Home() {
 
     sendEvents([
       {
-        name: "feed_impression",
+        name: 'feed_impression',
         title_id: currentItem.title_id,
-        position_in_feed: currentIndex + 1
-      }
+        position_in_feed: currentIndex + 1,
+      },
     ]);
   }, [currentItem, currentIndex, identity, sendEvents]);
 
@@ -526,11 +536,11 @@ export default function Home() {
       if (isSaved) {
         const response = await fetch(
           `/api/v1/me/watchlist/${titleId}?user_id=${userId}`,
-          { method: "DELETE" }
+          { method: 'DELETE' },
         );
 
         if (!response.ok) {
-          throw new Error("No se pudo quitar de la lista.");
+          throw new Error('No se pudo quitar de la lista.');
         }
 
         setSavedIds((prev) => {
@@ -541,38 +551,38 @@ export default function Home() {
 
         sendEvents([
           {
-            name: "unsave_watchlist",
+            name: 'unsave_watchlist',
             title_id: titleId,
-            position_in_feed: currentIndex + 1
-          }
+            position_in_feed: currentIndex + 1,
+          },
         ]);
       } else {
         const response = await fetch(
           `/api/v1/me/watchlist/${titleId}?user_id=${userId}`,
-          { method: "POST" }
+          { method: 'POST' },
         );
 
         if (!response.ok) {
-          throw new Error("No se pudo guardar en la lista.");
+          throw new Error('No se pudo guardar en la lista.');
         }
 
         setSavedIds((prev) => new Set(prev).add(titleId));
         sendEvents([
           {
-            name: "save_watchlist",
+            name: 'save_watchlist',
             title_id: titleId,
-            position_in_feed: currentIndex + 1
-          }
+            position_in_feed: currentIndex + 1,
+          },
         ]);
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Error inesperado";
+      const message = err instanceof Error ? err.message : 'Error inesperado';
       setError(message);
     }
   }, [currentItem, currentIndex, identity, savedIds, sendEvents]);
 
   const handleFeedback = useCallback(
-    (type: "like" | "dislike") => {
+    (type: 'like' | 'dislike') => {
       if (!currentItem) {
         return;
       }
@@ -580,21 +590,21 @@ export default function Home() {
       const titleId = currentItem.title_id;
       setFeedback((prev) => ({
         ...prev,
-        [titleId]: prev[titleId] === type ? prev[titleId] : type
+        [titleId]: prev[titleId] === type ? prev[titleId] : type,
       }));
 
       sendEvents([
         {
           name:
-            type === "like"
-              ? "feedback_more_like_this"
-              : "feedback_less_like_this",
+            type === 'like'
+              ? 'feedback_more_like_this'
+              : 'feedback_less_like_this',
           title_id: titleId,
-          position_in_feed: currentIndex + 1
-        }
+          position_in_feed: currentIndex + 1,
+        },
       ]);
     },
-    [currentItem, currentIndex, sendEvents]
+    [currentItem, currentIndex, sendEvents],
   );
 
   const handleShare = useCallback(async () => {
@@ -609,7 +619,7 @@ export default function Home() {
       if (navigator.share) {
         await navigator.share({
           title: currentItem.title,
-          url: shareUrl
+          url: shareUrl,
         });
       } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(shareUrl);
@@ -617,15 +627,15 @@ export default function Home() {
 
       sendEvents([
         {
-          name: "share_click",
+          name: 'share_click',
           title_id: currentItem.title_id,
-          position_in_feed: currentIndex + 1
-        }
+          position_in_feed: currentIndex + 1,
+        },
       ]);
     } catch (err) {
-      console.warn("Share failed", err);
+      console.warn('Share failed', err);
     }
-  }, [currentItem, currentIndex, sendEvents, trailerUrl]);
+  }, [currentItem, currentIndex, sendEvents]);
 
   const handleToggleTeaser = () => {
     setTeaserMode((prev) => {
@@ -638,15 +648,17 @@ export default function Home() {
   const activeFilters = useMemo(() => {
     const tags: string[] = [];
 
-    if (filterState.type !== "all") {
+    if (filterState.type !== 'all') {
       tags.push(labelFor(typeOptions, filterState.type));
     }
-    tags.push(...filterState.genres.map((value) => labelFor(genreOptions, value)));
     tags.push(
-      ...filterState.countries.map((value) => labelFor(countryOptions, value))
+      ...filterState.genres.map((value) => labelFor(genreOptions, value)),
     );
     tags.push(
-      ...filterState.languages.map((value) => labelFor(languageOptions, value))
+      ...filterState.countries.map((value) => labelFor(countryOptions, value)),
+    );
+    tags.push(
+      ...filterState.languages.map((value) => labelFor(languageOptions, value)),
     );
     if (filterState.year) {
       tags.push(filterState.year.label);
@@ -660,13 +672,15 @@ export default function Home() {
       const nextIndex = prev > 0 ? prev - 1 : prev;
       if (nextIndex !== prev) {
         const nextItem = items[nextIndex];
-        sendEvents([
-          {
-            name: "swipe_prev",
-            title_id: nextItem?.title_id,
-            position_in_feed: nextIndex + 1
-          }
-        ]);
+        if (nextItem) {
+          sendEvents([
+            {
+              name: 'swipe_prev',
+              title_id: nextItem.title_id,
+              position_in_feed: nextIndex + 1,
+            },
+          ]);
+        }
       }
       return nextIndex;
     });
@@ -677,21 +691,23 @@ export default function Home() {
       const nextIndex = prev < items.length - 1 ? prev + 1 : prev;
       if (nextIndex !== prev) {
         const nextItem = items[nextIndex];
-        sendEvents([
-          {
-            name: "swipe_next",
-            title_id: nextItem?.title_id,
-            position_in_feed: nextIndex + 1
-          }
-        ]);
+        if (nextItem) {
+          sendEvents([
+            {
+              name: 'swipe_next',
+              title_id: nextItem.title_id,
+              position_in_feed: nextIndex + 1,
+            },
+          ]);
+        }
       }
       return nextIndex;
     });
   };
 
   const toggleMulti = (
-    key: "genres" | "countries" | "languages",
-    value: string
+    key: 'genres' | 'countries' | 'languages',
+    value: string,
   ) => {
     setFilterState((prev) => {
       const current = prev[key];
@@ -705,10 +721,10 @@ export default function Home() {
     });
   };
 
-  const toggleType = (value: "movie" | "tv") => {
+  const toggleType = (value: TypeOptionValue) => {
     setFilterState((prev) => ({
       ...prev,
-      type: prev.type === value ? "all" : value,
+      type: prev.type === value ? 'all' : value,
     }));
   };
 
@@ -725,11 +741,15 @@ export default function Home() {
   };
 
   const isSaved = currentItem ? savedIds.has(currentItem.title_id) : false;
-  const currentFeedback = currentItem ? feedback[currentItem.title_id] : undefined;
+  const currentFeedback = currentItem
+    ? feedback[currentItem.title_id]
+    : undefined;
 
   return (
     <div className={styles.page}>
-      <aside className={`${styles.sidebar} ${menuOpen ? styles.sidebarOpen : ""}`}>
+      <aside
+        className={`${styles.sidebar} ${menuOpen ? styles.sidebarOpen : ''}`}
+      >
         <div className={styles.sidebarHeader}>
           <span className={styles.brand}>Reelio</span>
           <button
@@ -768,12 +788,12 @@ export default function Home() {
           <div className={styles.topbarActions}>
             <button
               className={`${styles.toggleButton} ${
-                teaserMode ? styles.toggleActive : ""
+                teaserMode ? styles.toggleActive : ''
               }`}
               type="button"
               onClick={handleToggleTeaser}
             >
-              Teaser {teaserSeconds}s: {teaserMode ? "On" : "Off"}
+              Teaser {teaserSeconds}s: {teaserMode ? 'On' : 'Off'}
             </button>
             <button className={styles.ghost} type="button">
               Buscar
@@ -788,7 +808,7 @@ export default function Home() {
               {typeOptions.map((option) => (
                 <button
                   className={`${styles.filterChip} ${
-                    filterState.type === option.value ? styles.filterActive : ""
+                    filterState.type === option.value ? styles.filterActive : ''
                   }`}
                   key={option.value}
                   type="button"
@@ -808,11 +828,11 @@ export default function Home() {
                   className={`${styles.filterChip} ${
                     filterState.genres.includes(option.value)
                       ? styles.filterActive
-                      : ""
+                      : ''
                   }`}
                   key={option.value}
                   type="button"
-                  onClick={() => toggleMulti("genres", option.value)}
+                  onClick={() => toggleMulti('genres', option.value)}
                 >
                   {option.label}
                 </button>
@@ -828,11 +848,11 @@ export default function Home() {
                   className={`${styles.filterChip} ${
                     filterState.countries.includes(option.value)
                       ? styles.filterActive
-                      : ""
+                      : ''
                   }`}
                   key={option.value}
                   type="button"
-                  onClick={() => toggleMulti("countries", option.value)}
+                  onClick={() => toggleMulti('countries', option.value)}
                 >
                   {option.label}
                 </button>
@@ -848,7 +868,7 @@ export default function Home() {
                   className={`${styles.filterChip} ${
                     filterState.year?.value === option.value
                       ? styles.filterActive
-                      : ""
+                      : ''
                   }`}
                   key={option.value}
                   type="button"
@@ -868,11 +888,11 @@ export default function Home() {
                   className={`${styles.filterChip} ${
                     filterState.languages.includes(option.value)
                       ? styles.filterActive
-                      : ""
+                      : ''
                   }`}
                   key={option.value}
                   type="button"
-                  onClick={() => toggleMulti("languages", option.value)}
+                  onClick={() => toggleMulti('languages', option.value)}
                 >
                   {option.label}
                 </button>
@@ -913,7 +933,8 @@ export default function Home() {
             )}
             {!loading && emptyState && (
               <p className={styles.state}>
-                No hay resultados con estos filtros. Prueba a quitar algun filtro.
+                No hay resultados con estos filtros. Prueba a quitar algun
+                filtro.
               </p>
             )}
 
@@ -921,12 +942,19 @@ export default function Home() {
               <>
                 <div className={styles.trailerFrame}>
                   {currentItem.poster_url ? (
-                    <img src={currentItem.poster_url} alt={currentItem.title} />
+                    <Image
+                      className={styles.mediaImage}
+                      src={currentItem.poster_url}
+                      alt={currentItem.title}
+                      fill
+                      sizes="(max-width: 900px) 100vw, 60vw"
+                      priority
+                    />
                   ) : (
                     <div className={styles.mediaFallback}>Sin poster</div>
                   )}
                   <div className={styles.mediaTag}>
-                    {teaserMode ? `Teaser ${teaserSeconds}s` : "Trailer"}
+                    {teaserMode ? `Teaser ${teaserSeconds}s` : 'Trailer'}
                   </div>
                 </div>
                 <div className={styles.viewerControls}>
@@ -950,7 +978,11 @@ export default function Home() {
                 </div>
                 <div className={styles.moods}>
                   {moods.map((mood) => (
-                    <button className={styles.moodChip} key={mood} type="button">
+                    <button
+                      className={styles.moodChip}
+                      key={mood}
+                      type="button"
+                    >
                       {mood}
                     </button>
                   ))}
@@ -977,41 +1009,43 @@ export default function Home() {
             ) : (
               <>
                 <div className={styles.detailsHeader}>
-                  <h2>{currentItem?.title ?? "Selecciona un trailer"}</h2>
-                  <p>{currentItem?.overview_short || "Sinopsis pendiente."}</p>
+                  <h2>{currentItem?.title ?? 'Selecciona un trailer'}</h2>
+                  <p>{currentItem?.overview_short || 'Sinopsis pendiente.'}</p>
                 </div>
                 <div className={styles.detailsMeta}>
-                  <span>{currentItem?.year ?? "-"}</span>
-                  <span>{currentItem?.countries.join(" · ") ?? "-"}</span>
-                  <span>{currentItem?.genres.slice(0, 2).join(" / ") ?? "-"}</span>
+                  <span>{currentItem?.year ?? '-'}</span>
+                  <span>{currentItem?.countries.join(' · ') ?? '-'}</span>
+                  <span>
+                    {currentItem?.genres.slice(0, 2).join(' / ') ?? '-'}
+                  </span>
                 </div>
                 <div className={styles.detailsActions}>
                   <button
                     className={`${styles.primarySmall} ${
-                      isSaved ? styles.actionActive : ""
+                      isSaved ? styles.actionActive : ''
                     }`}
                     type="button"
                     onClick={handleSaveToggle}
                     disabled={!currentItem}
                   >
-                    {isSaved ? "En lista" : "Guardar en lista"}
+                    {isSaved ? 'En lista' : 'Guardar en lista'}
                   </button>
                   <button
                     className={`${styles.secondarySmall} ${
-                      currentFeedback === "like" ? styles.actionActive : ""
+                      currentFeedback === 'like' ? styles.actionActive : ''
                     }`}
                     type="button"
-                    onClick={() => handleFeedback("like")}
+                    onClick={() => handleFeedback('like')}
                     disabled={!currentItem}
                   >
                     Mas como esto
                   </button>
                   <button
                     className={`${styles.secondarySmall} ${
-                      currentFeedback === "dislike" ? styles.actionActive : ""
+                      currentFeedback === 'dislike' ? styles.actionActive : ''
                     }`}
                     type="button"
-                    onClick={() => handleFeedback("dislike")}
+                    onClick={() => handleFeedback('dislike')}
                     disabled={!currentItem}
                   >
                     Menos como esto
@@ -1028,23 +1062,28 @@ export default function Home() {
                     <a
                       className={styles.link}
                       href={trailerLink}
-                      onClick={() =>
+                      onClick={() => {
+                        if (!currentItem) {
+                          return;
+                        }
                         sendEvents([
                           {
-                            name: "trailer_play",
-                            title_id: currentItem?.title_id,
+                            name: 'trailer_play',
+                            title_id: currentItem.title_id,
                             position_in_feed: currentIndex + 1,
                             metadata: {
                               teaser_mode: teaserMode,
-                              teaser_seconds: teaserSeconds
-                            }
-                          }
-                        ])
-                      }
+                              teaser_seconds: teaserSeconds,
+                            },
+                          },
+                        ]);
+                      }}
                       target="_blank"
                       rel="noreferrer"
                     >
-                      {teaserMode ? `Ver trailer (${teaserSeconds}s)` : "Ver trailer completo"}
+                      {teaserMode
+                        ? `Ver trailer (${teaserSeconds}s)`
+                        : 'Ver trailer completo'}
                     </a>
                   ) : (
                     <span className={styles.muted}>Sin trailer</span>
@@ -1074,7 +1113,11 @@ export default function Home() {
             onClick={handleLoadMore}
             disabled={!cursor || loadingMore}
           >
-            {loadingMore ? "Cargando..." : cursor ? "Cargar mas" : "Fin del feed"}
+            {loadingMore
+              ? 'Cargando...'
+              : cursor
+                ? 'Cargar mas'
+                : 'Fin del feed'}
           </button>
         </footer>
 
@@ -1095,7 +1138,7 @@ export default function Home() {
                 <div className={styles.collectionCard} key={collection.id}>
                   <div className={styles.collectionHead}>
                     <h4>{collection.title}</h4>
-                    <span>{collection.description ?? "Seleccion curada"}</span>
+                    <span>{collection.description ?? 'Seleccion curada'}</span>
                   </div>
                   <div className={styles.collectionItems}>
                     {collection.items.map((item) => (
@@ -1106,9 +1149,17 @@ export default function Home() {
                       >
                         <div className={styles.collectionPoster}>
                           {item.poster_url ? (
-                            <img src={item.poster_url} alt={item.title} />
+                            <Image
+                              className={styles.mediaImage}
+                              src={item.poster_url}
+                              alt={item.title}
+                              fill
+                              sizes="160px"
+                            />
                           ) : (
-                            <div className={styles.mediaFallback}>Sin poster</div>
+                            <div className={styles.mediaFallback}>
+                              Sin poster
+                            </div>
                           )}
                         </div>
                         <span>{item.title}</span>

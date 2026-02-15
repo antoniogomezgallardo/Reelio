@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 const TAKE = 20;
 
@@ -8,7 +8,7 @@ function parseList(value: string | null): string[] {
     return [];
   }
   return value
-    .split(",")
+    .split(',')
     .map((entry) => entry.trim())
     .filter((entry) => entry.length > 0);
 }
@@ -26,23 +26,25 @@ function clampYear(value: string | null): number | undefined {
 
 function getTrailerPriority(kind: string): number {
   switch (kind) {
-    case "trailer":
+    case 'trailer':
       return 3;
-    case "teaser":
+    case 'teaser':
       return 2;
-    case "clip":
+    case 'clip':
       return 1;
     default:
       return 0;
   }
 }
 
-function pickBestTrailer(trailers: {
-  source: string;
-  sourceVideoId: string;
-  kind: string;
-  isOfficial: boolean;
-}[]) {
+function pickBestTrailer(
+  trailers: {
+    source: string;
+    sourceVideoId: string;
+    kind: string;
+    isOfficial: boolean;
+  }[],
+) {
   if (trailers.length === 0) {
     return null;
   }
@@ -55,17 +57,20 @@ function pickBestTrailer(trailers: {
   });
 
   const trailer = sorted[0];
+  if (!trailer) {
+    return null;
+  }
   return {
     source: trailer.source,
     video_id: trailer.sourceVideoId,
     kind: trailer.kind,
-    is_official: trailer.isOfficial
+    is_official: trailer.isOfficial,
   };
 }
 
 function toOverviewShort(overview?: string | null): string {
   if (!overview) {
-    return "";
+    return '';
   }
   if (overview.length <= 160) {
     return overview;
@@ -76,17 +81,17 @@ function toOverviewShort(overview?: string | null): string {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
-  const typeParam = searchParams.get("type");
-  const genres = parseList(searchParams.get("genres"));
-  const countries = parseList(searchParams.get("countries"));
-  const languages = parseList(searchParams.get("lang"));
-  const yearMin = clampYear(searchParams.get("year_min"));
-  const yearMax = clampYear(searchParams.get("year_max"));
-  const cursor = searchParams.get("cursor");
+  const typeParam = searchParams.get('type');
+  const genres = parseList(searchParams.get('genres'));
+  const countries = parseList(searchParams.get('countries'));
+  const languages = parseList(searchParams.get('lang'));
+  const yearMin = clampYear(searchParams.get('year_min'));
+  const yearMax = clampYear(searchParams.get('year_max'));
+  const cursor = searchParams.get('cursor');
 
   const where: Record<string, unknown> = {};
 
-  if (typeParam === "movie" || typeParam === "tv") {
+  if (typeParam === 'movie' || typeParam === 'tv') {
     where.type = typeParam;
   }
   if (genres.length > 0) {
@@ -101,19 +106,19 @@ export async function GET(request: Request) {
   if (yearMin || yearMax) {
     where.year = {
       ...(yearMin ? { gte: yearMin } : {}),
-      ...(yearMax ? { lte: yearMax } : {})
+      ...(yearMax ? { lte: yearMax } : {}),
     };
   }
 
   try {
     const results = await prisma.title.findMany({
       where,
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: TAKE + 1,
       ...(cursor
         ? {
             cursor: { id: cursor },
-            skip: 1
+            skip: 1,
           }
         : {}),
       include: {
@@ -122,10 +127,10 @@ export async function GET(request: Request) {
             source: true,
             sourceVideoId: true,
             kind: true,
-            isOfficial: true
-          }
-        }
-      }
+            isOfficial: true,
+          },
+        },
+      },
     });
 
     let nextCursor: string | null = null;
@@ -133,7 +138,9 @@ export async function GET(request: Request) {
 
     if (results.length > TAKE) {
       const nextItem = results[TAKE];
-      nextCursor = nextItem.id;
+      if (nextItem) {
+        nextCursor = nextItem.id;
+      }
       items = results.slice(0, TAKE);
     }
 
@@ -145,18 +152,18 @@ export async function GET(request: Request) {
       genres: title.genres,
       overview_short: toOverviewShort(title.overview),
       poster_url: title.posterUrl,
-      trailer: pickBestTrailer(title.trailers)
+      trailer: pickBestTrailer(title.trailers),
     }));
 
     return NextResponse.json({ items: feedItems, next_cursor: nextCursor });
   } catch (error) {
-    console.error("Feed query failed", {
+    console.error('Feed query failed', {
       error,
-      url: request.url
+      url: request.url,
     });
     return NextResponse.json(
-      { error: "Failed to load feed." },
-      { status: 500 }
+      { error: 'Failed to load feed.' },
+      { status: 500 },
     );
   }
 }

@@ -1,38 +1,35 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 type Params = {
-  params: {
+  params: Promise<{
     title_id: string;
-  };
+  }>;
 };
 
 function parseUserId(request: Request): string | null {
   const { searchParams } = new URL(request.url);
-  return searchParams.get("user_id");
+  return searchParams.get('user_id');
 }
 
 async function ensureUser(userId: string) {
   await prisma.user.upsert({
     where: { id: userId },
     update: {},
-    create: { id: userId }
+    create: { id: userId },
   });
 }
 
 export async function POST(request: Request, { params }: Params) {
   const userId = parseUserId(request);
-  const titleId = params.title_id;
+  const { title_id: titleId } = await params;
 
   if (!userId) {
-    console.warn("Watchlist add missing user_id", {
+    console.warn('Watchlist add missing user_id', {
       url: request.url,
-      titleId
+      titleId,
     });
-    return NextResponse.json(
-      { error: "Missing user_id" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'Missing user_id' }, { status: 400 });
   }
 
   try {
@@ -41,61 +38,58 @@ export async function POST(request: Request, { params }: Params) {
     const entry = await prisma.userWatchlist.upsert({
       where: { userId_titleId: { userId, titleId } },
       update: {},
-      create: { userId, titleId }
+      create: { userId, titleId },
     });
 
     return NextResponse.json({
       user_id: entry.userId,
-      title_id: entry.titleId
+      title_id: entry.titleId,
     });
   } catch (error) {
-    console.error("Watchlist add failed", {
+    console.error('Watchlist add failed', {
       error,
       url: request.url,
       userId,
-      titleId
+      titleId,
     });
     return NextResponse.json(
-      { error: "Failed to add watchlist item." },
-      { status: 500 }
+      { error: 'Failed to add watchlist item.' },
+      { status: 500 },
     );
   }
 }
 
 export async function DELETE(request: Request, { params }: Params) {
   const userId = parseUserId(request);
-  const titleId = params.title_id;
+  const { title_id: titleId } = await params;
 
   if (!userId) {
-    console.warn("Watchlist remove missing user_id", {
+    console.warn('Watchlist remove missing user_id', {
       url: request.url,
-      titleId
+      titleId,
     });
-    return NextResponse.json(
-      { error: "Missing user_id" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'Missing user_id' }, { status: 400 });
   }
 
   try {
     await prisma.userWatchlist.delete({
-      where: { userId_titleId: { userId, titleId } }
+      where: { userId_titleId: { userId, titleId } },
     });
 
     return NextResponse.json({
       user_id: userId,
-      title_id: titleId
+      title_id: titleId,
     });
   } catch (error) {
-    console.error("Watchlist remove failed", {
+    console.error('Watchlist remove failed', {
       error,
       url: request.url,
       userId,
-      titleId
+      titleId,
     });
     return NextResponse.json(
-      { error: "Failed to remove watchlist item." },
-      { status: 500 }
+      { error: 'Failed to remove watchlist item.' },
+      { status: 500 },
     );
   }
 }
