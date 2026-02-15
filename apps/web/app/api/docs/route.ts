@@ -26,7 +26,7 @@ const swaggerUiHtml = `<!doctype html>
 export async function GET() {
   return new Response(swaggerUiHtml, {
     headers: {
-      "content-type": "text/html; charset=utf-8"
-    }
+      'content-type': 'text/html; charset=utf-8',
+    },
   });
 }

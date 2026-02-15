@@ -1,31 +1,33 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 type Params = {
-  params: {
+  params: Promise<{
     title_id: string;
-  };
+  }>;
 };
 
 function getTrailerPriority(kind: string): number {
   switch (kind) {
-    case "trailer":
+    case 'trailer':
       return 3;
-    case "teaser":
+    case 'teaser':
       return 2;
-    case "clip":
+    case 'clip':
       return 1;
     default:
       return 0;
   }
 }
 
-function pickBestTrailer(trailers: {
-  source: string;
-  sourceVideoId: string;
-  kind: string;
-  isOfficial: boolean;
-}[]) {
+function pickBestTrailer(
+  trailers: {
+    source: string;
+    sourceVideoId: string;
+    kind: string;
+    isOfficial: boolean;
+  }[],
+) {
   if (trailers.length === 0) {
     return null;
   }
@@ -38,17 +40,20 @@ function pickBestTrailer(trailers: {
   });
 
   const trailer = sorted[0];
+  if (!trailer) {
+    return null;
+  }
   return {
     source: trailer.source,
     video_id: trailer.sourceVideoId,
     kind: trailer.kind,
-    is_official: trailer.isOfficial
+    is_official: trailer.isOfficial,
   };
 }
 
 function toOverviewShort(overview?: string | null): string {
   if (!overview) {
-    return "";
+    return '';
   }
   if (overview.length <= 160) {
     return overview;
@@ -58,14 +63,12 @@ function toOverviewShort(overview?: string | null): string {
 
 export async function GET(request: Request, { params }: Params) {
   const pathname = new URL(request.url).pathname;
-  const titleId = params?.title_id ?? pathname.split("/").pop() ?? "";
+  const resolvedParams = await params;
+  const titleId = resolvedParams?.title_id ?? pathname.split('/').pop() ?? '';
 
   if (!titleId) {
-    console.warn("Title lookup missing id", { url: request.url });
-    return NextResponse.json(
-      { error: "Missing title_id" },
-      { status: 400 }
-    );
+    console.warn('Title lookup missing id', { url: request.url });
+    return NextResponse.json({ error: 'Missing title_id' }, { status: 400 });
   }
 
   try {
@@ -77,17 +80,14 @@ export async function GET(request: Request, { params }: Params) {
             source: true,
             sourceVideoId: true,
             kind: true,
-            isOfficial: true
-          }
-        }
-      }
+            isOfficial: true,
+          },
+        },
+      },
     });
 
     if (!title) {
-      return NextResponse.json(
-        { error: "Title not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Title not found' }, { status: 404 });
     }
 
     const item = {
@@ -98,19 +98,19 @@ export async function GET(request: Request, { params }: Params) {
       genres: title.genres,
       overview_short: toOverviewShort(title.overview),
       poster_url: title.posterUrl,
-      trailer: pickBestTrailer(title.trailers)
+      trailer: pickBestTrailer(title.trailers),
     };
 
     return NextResponse.json({ item });
   } catch (error) {
-    console.error("Title lookup failed", {
+    console.error('Title lookup failed', {
       error,
       url: request.url,
-      titleId
+      titleId,
     });
     return NextResponse.json(
-      { error: "Failed to load title." },
-      { status: 500 }
+      { error: 'Failed to load title.' },
+      { status: 500 },
     );
   }
 }

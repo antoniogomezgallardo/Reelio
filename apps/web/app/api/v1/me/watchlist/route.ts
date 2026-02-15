@@ -1,30 +1,32 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 function parseUserId(request: Request): string | null {
   const { searchParams } = new URL(request.url);
-  return searchParams.get("user_id");
+  return searchParams.get('user_id');
 }
 
 function getTrailerPriority(kind: string): number {
   switch (kind) {
-    case "trailer":
+    case 'trailer':
       return 3;
-    case "teaser":
+    case 'teaser':
       return 2;
-    case "clip":
+    case 'clip':
       return 1;
     default:
       return 0;
   }
 }
 
-function pickBestTrailer(trailers: {
-  source: string;
-  sourceVideoId: string;
-  kind: string;
-  isOfficial: boolean;
-}[]) {
+function pickBestTrailer(
+  trailers: {
+    source: string;
+    sourceVideoId: string;
+    kind: string;
+    isOfficial: boolean;
+  }[],
+) {
   if (trailers.length === 0) {
     return null;
   }
@@ -37,17 +39,20 @@ function pickBestTrailer(trailers: {
   });
 
   const trailer = sorted[0];
+  if (!trailer) {
+    return null;
+  }
   return {
     source: trailer.source,
     video_id: trailer.sourceVideoId,
     kind: trailer.kind,
-    is_official: trailer.isOfficial
+    is_official: trailer.isOfficial,
   };
 }
 
 function toOverviewShort(overview?: string | null): string {
   if (!overview) {
-    return "";
+    return '';
   }
   if (overview.length <= 160) {
     return overview;
@@ -59,17 +64,14 @@ export async function GET(request: Request) {
   const userId = parseUserId(request);
 
   if (!userId) {
-    console.warn("Watchlist missing user_id", { url: request.url });
-    return NextResponse.json(
-      { error: "Missing user_id" },
-      { status: 400 }
-    );
+    console.warn('Watchlist missing user_id', { url: request.url });
+    return NextResponse.json({ error: 'Missing user_id' }, { status: 400 });
   }
 
   try {
     const watchlist = await prisma.userWatchlist.findMany({
       where: { userId },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       include: {
         title: {
           include: {
@@ -78,12 +80,12 @@ export async function GET(request: Request) {
                 source: true,
                 sourceVideoId: true,
                 kind: true,
-                isOfficial: true
-              }
-            }
-          }
-        }
-      }
+                isOfficial: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     const items = watchlist.map((entry) => ({
@@ -94,19 +96,19 @@ export async function GET(request: Request) {
       genres: entry.title.genres,
       overview_short: toOverviewShort(entry.title.overview),
       poster_url: entry.title.posterUrl,
-      trailer: pickBestTrailer(entry.title.trailers)
+      trailer: pickBestTrailer(entry.title.trailers),
     }));
 
     return NextResponse.json({ items });
   } catch (error) {
-    console.error("Watchlist query failed", {
+    console.error('Watchlist query failed', {
       error,
       url: request.url,
-      userId
+      userId,
     });
     return NextResponse.json(
-      { error: "Failed to load watchlist." },
-      { status: 500 }
+      { error: 'Failed to load watchlist.' },
+      { status: 500 },
     );
   }
 }
