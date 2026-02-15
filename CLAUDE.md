@@ -344,6 +344,7 @@ Convenciones:
 - Prioriza **implementar el MVP** antes de refinar.
 - Mantén el sistema **provider-agnostic** (adaptadores para metadata y trailers).
 - No inventes dependencias raras si no aportan valor real.
+- Antes de ejecutar `npm run dev`, comprobar y detener procesos en puertos 3000/3001 y eliminar el lock de `.next/dev/lock` si existe.
 - Cada PR debe incluir:
   - cambios + tests mínimos
   - actualización de docs si cambia contrato
