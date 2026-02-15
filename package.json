@@ -7,6 +7,7 @@
   ],
   "scripts": {
     "dev": "npm run dev -w apps/web",
+    "dev:stop": "powershell -NoProfile -Command \"$ports=3000,3001; $pids=Get-NetTCPConnection -LocalPort $ports -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | Where-Object { $_ -and $_ -ne 0 }; if ($pids) { Stop-Process -Id $pids -Force -ErrorAction SilentlyContinue } else { Write-Host 'No dev server process found on ports 3000/3001.' }; $lockPath='C:\\Users\\User\\Documents\\Workspaces\\Reelio\\apps\\web\\.next\\dev\\lock'; if (Test-Path $lockPath) { Remove-Item $lockPath -Force }\"",
     "build": "npm run build -w apps/web",
     "start": "npm run start -w apps/web",
     "lint": "npm run lint -w apps/web",
