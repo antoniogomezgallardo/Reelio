@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 const TAKE = 20;
+const DIVERSITY_WINDOW = 3;
+const DIVERSITY_PENALTY = 2;
 
 function parseList(value: string | null): string[] {
   if (!value) {
@@ -78,6 +80,80 @@ function toOverviewShort(overview?: string | null): string {
   return `${overview.slice(0, 157)}...`;
 }
 
+type FeedTitle = {
+  id: string;
+  title: string;
+  year: number | null;
+  countries: string[];
+  genres: string[];
+  overview: string | null;
+  posterUrl: string | null;
+  trailers: {
+    source: string;
+    sourceVideoId: string;
+    kind: string;
+    isOfficial: boolean;
+  }[];
+};
+
+function diversifyByGenre(items: FeedTitle[]): FeedTitle[] {
+  const remaining = items.map((item, index) => ({ item, index }));
+  const output: FeedTitle[] = [];
+  const recent: string[][] = [];
+
+  while (remaining.length > 0) {
+    const recentSet = new Set(recent.flat());
+    let bestIndex = 0;
+    let bestScore = Number.POSITIVE_INFINITY;
+
+    for (let i = 0; i < remaining.length; i += 1) {
+      const candidate = remaining[i];
+      if (!candidate) {
+        continue;
+      }
+      const genres = candidate.item.genres ?? [];
+      let score = 0;
+
+      for (const genre of genres) {
+        if (recentSet.has(genre)) {
+          score += DIVERSITY_PENALTY;
+        }
+      }
+
+      const bestCandidate = remaining[bestIndex];
+      if (!bestCandidate) {
+        bestIndex = i;
+        bestScore = score;
+        continue;
+      }
+      if (
+        score < bestScore ||
+        (score === bestScore && candidate.index < bestCandidate.index)
+      ) {
+        bestScore = score;
+        bestIndex = i;
+      }
+
+      if (bestScore === 0) {
+        break;
+      }
+    }
+
+    const [selected] = remaining.splice(bestIndex, 1);
+    if (!selected) {
+      break;
+    }
+    output.push(selected.item);
+    recent.push(selected.item.genres ?? []);
+
+    if (recent.length > DIVERSITY_WINDOW) {
+      recent.shift();
+    }
+  }
+
+  return output;
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
@@ -144,7 +220,8 @@ export async function GET(request: Request) {
       items = results.slice(0, TAKE);
     }
 
-    const feedItems = items.map((title) => ({
+    const diversified = diversifyByGenre(items as FeedTitle[]);
+    const feedItems = diversified.map((title) => ({
       title_id: title.id,
       title: title.title,
       year: title.year,
