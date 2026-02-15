@@ -129,6 +129,30 @@ paths:
                     type: string
                   title_id:
                     type: string
+  /events:
+    post:
+      summary: Record analytics events (batch)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                events:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/AnalyticsEvent"
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accepted:
+                    type: integer
 components:
   schemas:
     FeedCard:
@@ -166,3 +190,43 @@ components:
               type: string
             is_official:
               type: boolean
+    AnalyticsEvent:
+      type: object
+      properties:
+        name:
+          type: string
+          enum:
+            - app_open
+            - feed_impression
+            - trailer_play
+            - trailer_pause
+            - trailer_complete
+            - swipe_next
+            - swipe_prev
+            - save_watchlist
+            - unsave_watchlist
+            - feedback_more_like_this
+            - feedback_less_like_this
+            - share_click
+            - share_complete
+            - filter_change
+            - open_title_details
+        timestamp:
+          type: string
+          format: date-time
+        session_id:
+          type: string
+        user_id:
+          type: string
+        guest_id:
+          type: string
+        title_id:
+          type: string
+        trailer_id:
+          type: string
+        position_in_feed:
+          type: integer
+        active_filters:
+          type: object
+        metadata:
+          type: object

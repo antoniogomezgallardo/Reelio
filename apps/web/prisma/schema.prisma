@@ -32,6 +32,24 @@ enum FeedbackAction {
   complete
 }
 
+enum AnalyticsEventName {
+  app_open
+  feed_impression
+  trailer_play
+  trailer_pause
+  trailer_complete
+  swipe_next
+  swipe_prev
+  save_watchlist
+  unsave_watchlist
+  feedback_more_like_this
+  feedback_less_like_this
+  share_click
+  share_complete
+  filter_change
+  open_title_details
+}
+
 model User {
   id           String          @id @default(uuid()) @db.Uuid
   createdAt    DateTime        @default(now()) @map("created_at")
@@ -40,6 +58,7 @@ model User {
   timezone     String?
   watchlist    UserWatchlist[]
   feedback     UserFeedback[]
+  events       AnalyticsEvent[]
 
   @@map("users")
 }
@@ -65,6 +84,7 @@ model Title {
   people         TitlePerson[]
   watchlist      UserWatchlist[]
   feedback       UserFeedback[]
+  events         AnalyticsEvent[]
   collectionItems CollectionItem[]
 
   @@unique([provider, providerId])
@@ -94,6 +114,7 @@ model Trailer {
   createdAt       DateTime      @default(now()) @map("created_at")
   title           Title         @relation(fields: [titleId], references: [id])
   feedback        UserFeedback[]
+  events          AnalyticsEvent[]
 
   @@map("trailers")
 }
@@ -122,6 +143,25 @@ model UserFeedback {
   trailer   Trailer?       @relation(fields: [trailerId], references: [id])
 
   @@map("user_feedback")
+}
+
+model AnalyticsEvent {
+  id             String              @id @default(uuid()) @db.Uuid
+  name           AnalyticsEventName  @map("name")
+  userId         String?             @map("user_id") @db.Uuid
+  guestId        String?             @map("guest_id")
+  sessionId      String?             @map("session_id")
+  titleId        String?             @map("title_id") @db.Uuid
+  trailerId      String?             @map("trailer_id") @db.Uuid
+  positionInFeed Int?                @map("position_in_feed")
+  activeFilters  Json?               @map("active_filters")
+  metadata       Json?
+  createdAt      DateTime            @default(now()) @map("created_at")
+  user           User?               @relation(fields: [userId], references: [id])
+  title          Title?              @relation(fields: [titleId], references: [id])
+  trailer        Trailer?            @relation(fields: [trailerId], references: [id])
+
+  @@map("analytics_events")
 }
 
 model Collection {
