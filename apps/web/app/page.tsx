@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import styles from "./page.module.css";
 
 type FeedTrailer = {
@@ -132,6 +133,7 @@ const getOrCreateId = (storage: Storage, key: string) => {
 };
 
 export default function Home() {
+  const searchParams = useSearchParams();
   const [items, setItems] = useState<FeedItem[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -150,6 +152,11 @@ export default function Home() {
     {}
   );
   const previousFilterRef = useRef<string | null>(null);
+
+  const sharedTitleId = useMemo(() => {
+    const value = searchParams.get("t");
+    return value && value.trim().length > 0 ? value.trim() : null;
+  }, [searchParams]);
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -193,6 +200,14 @@ export default function Home() {
     },
     [queryString]
   );
+
+  const fetchTitleById = useCallback(async (titleId: string) => {
+    const response = await fetch(`/api/v1/titles/${titleId}`);
+    if (!response.ok) {
+      throw new Error("No se pudo cargar el titulo.");
+    }
+    return (await response.json()) as { item: FeedItem };
+  }, []);
 
   useEffect(() => {
     const guestId = getOrCreateId(localStorage, guestIdStorageKey);
@@ -308,6 +323,10 @@ export default function Home() {
 
 
   useEffect(() => {
+    if (sharedTitleId) {
+      return;
+    }
+
     let active = true;
 
     setLoading(true);
@@ -339,7 +358,45 @@ export default function Home() {
     return () => {
       active = false;
     };
-  }, [fetchFeed, reloadKey]);
+  }, [fetchFeed, reloadKey, sharedTitleId]);
+
+  useEffect(() => {
+    if (!sharedTitleId) {
+      return;
+    }
+
+    let active = true;
+
+    setLoading(true);
+    setError(null);
+    setItems([]);
+
+    fetchTitleById(sharedTitleId)
+      .then((data) => {
+        if (!active) {
+          return;
+        }
+        setItems([data.item]);
+        setCursor(null);
+        setCurrentIndex(0);
+      })
+      .catch((err: unknown) => {
+        if (!active) {
+          return;
+        }
+        const message = err instanceof Error ? err.message : "Error inesperado";
+        setError(message);
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [fetchTitleById, reloadKey, sharedTitleId]);
 
   const handleRetry = () => {
     setReloadKey((prev) => prev + 1);
@@ -471,7 +528,9 @@ export default function Home() {
       return;
     }
 
-    const shareUrl = trailerUrl ?? window.location.href;
+    const shareUrl = currentItem
+      ? `${window.location.origin}/?t=${encodeURIComponent(currentItem.title_id)}`
+      : window.location.href;
     try {
       if (navigator.share) {
         await navigator.share({
