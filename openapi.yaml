@@ -153,6 +153,27 @@ paths:
                 properties:
                   accepted:
                     type: integer
+  /titles/{title_id}:
+    get:
+      summary: Get title details
+      parameters:
+        - in: path
+          name: title_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Title response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  item:
+                    $ref: "#/components/schemas/FeedCard"
+        "404":
+          description: Not found
 components:
   schemas:
     FeedCard:
