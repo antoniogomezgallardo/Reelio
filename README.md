@@ -31,6 +31,10 @@ OpenAPI spec: openapi.yaml
 Swagger UI: /api/docs
 Raw spec endpoint: /api/openapi
 
+## Analytics (events batch)
+The POST /api/v1/events endpoint stores analytics events in batch to reduce
+network calls and enable core product metrics (completion, saves, shares, etc.).
+
 ## UI
 - Feed UI (prototype) at / (sidebar + viewer + details panel)
 
