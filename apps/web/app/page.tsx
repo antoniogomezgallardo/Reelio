@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./page.module.css";
 
 type FeedTrailer = {
@@ -24,6 +24,19 @@ type FeedItem = {
 type FeedResponse = {
   items: FeedItem[];
   next_cursor: string | null;
+};
+
+type AnalyticsEvent = {
+  name: string;
+  timestamp?: string;
+  session_id?: string;
+  user_id?: string;
+  guest_id?: string;
+  title_id?: string;
+  trailer_id?: string;
+  position_in_feed?: number;
+  active_filters?: unknown;
+  metadata?: unknown;
 };
 
 const typeOptions = [
@@ -88,6 +101,36 @@ const initialFilters: FilterState = {
 const labelFor = (options: { label: string; value: string }[], value: string) =>
   options.find((option) => option.value === value)?.label ?? value;
 
+const guestIdStorageKey = "reelio_guest_id";
+const sessionIdStorageKey = "reelio_session_id";
+
+const createId = () => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+
+  const bytes = Array.from({ length: 16 }, () =>
+    Math.floor(Math.random() * 256)
+  );
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+  const hex = bytes.map((byte) => byte.toString(16).padStart(2, "0"));
+  return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex
+    .slice(6, 8)
+    .join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10, 16).join("")}`;
+};
+
+const getOrCreateId = (storage: Storage, key: string) => {
+  const existing = storage.getItem(key);
+  if (existing) {
+    return existing;
+  }
+  const fresh = createId();
+  storage.setItem(key, fresh);
+  return fresh;
+};
+
 export default function Home() {
   const [items, setItems] = useState<FeedItem[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -97,6 +140,15 @@ export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [filterState, setFilterState] = useState<FilterState>(initialFilters);
+  const [identity, setIdentity] = useState<{
+    guestId: string;
+    sessionId: string;
+  } | null>(null);
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [feedback, setFeedback] = useState<Record<string, "like" | "dislike">>(
+    {}
+  );
+  const previousFilterRef = useRef<string | null>(null);
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -140,6 +192,119 @@ export default function Home() {
     },
     [queryString]
   );
+
+  useEffect(() => {
+    const guestId = getOrCreateId(localStorage, guestIdStorageKey);
+    const sessionId = getOrCreateId(sessionStorage, sessionIdStorageKey);
+    setIdentity({ guestId, sessionId });
+  }, []);
+
+  useEffect(() => {
+    if (!identity) {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const loadWatchlist = async () => {
+      try {
+        const response = await fetch(
+          `/api/v1/me/watchlist?user_id=${identity.guestId}`,
+          { signal: controller.signal }
+        );
+
+        if (!response.ok) {
+          throw new Error("No se pudo cargar la watchlist.");
+        }
+
+        const data = (await response.json()) as {
+          items: { title_id: string }[];
+        };
+
+        setSavedIds(new Set(data.items.map((item) => item.title_id)));
+      } catch (err: unknown) {
+        if (err instanceof DOMException && err.name === "AbortError") {
+          return;
+        }
+        const message = err instanceof Error ? err.message : "Error inesperado";
+        setError(message);
+      }
+    };
+
+    loadWatchlist();
+
+    return () => {
+      controller.abort();
+    };
+  }, [identity]);
+
+  const sendEvents = useCallback(
+    async (events: AnalyticsEvent[]) => {
+      if (!identity || events.length === 0) {
+        return;
+      }
+
+      const payload = {
+        events: events.map((event) => ({
+          ...event,
+          session_id: event.session_id ?? identity.sessionId,
+          guest_id: event.guest_id ?? identity.guestId,
+          timestamp: event.timestamp ?? new Date().toISOString(),
+          active_filters: event.active_filters ?? filterState
+        }))
+      };
+
+      try {
+        if ("sendBeacon" in navigator) {
+          const blob = new Blob([JSON.stringify(payload)], {
+            type: "application/json"
+          });
+          navigator.sendBeacon("/api/v1/events", blob);
+          return;
+        }
+
+        await fetch("/api/v1/events", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          keepalive: true
+        });
+      } catch (err) {
+        console.warn("Failed to send analytics event", err);
+      }
+    },
+    [filterState, identity]
+  );
+
+  useEffect(() => {
+    if (!identity) {
+      return;
+    }
+
+    sendEvents([{ name: "app_open" }]);
+  }, [identity, sendEvents]);
+
+  const filterSignature = useMemo(
+    () => JSON.stringify(filterState),
+    [filterState]
+  );
+
+  useEffect(() => {
+    if (previousFilterRef.current && previousFilterRef.current !== filterSignature) {
+      sendEvents([
+        {
+          name: "filter_change",
+          active_filters: filterState,
+          metadata: {
+            previous: JSON.parse(previousFilterRef.current)
+          }
+        }
+      ]);
+    }
+
+    previousFilterRef.current = filterSignature;
+  }, [filterSignature, filterState, sendEvents]);
+
 
   useEffect(() => {
     let active = true;
@@ -198,6 +363,132 @@ export default function Home() {
     ? `https://www.youtube.com/watch?v=${currentItem.trailer.video_id}`
     : null;
 
+  useEffect(() => {
+    if (!identity || !currentItem) {
+      return;
+    }
+
+    sendEvents([
+      {
+        name: "feed_impression",
+        title_id: currentItem.title_id,
+        position_in_feed: currentIndex + 1
+      }
+    ]);
+  }, [currentItem, currentIndex, identity, sendEvents]);
+
+  const handleSaveToggle = useCallback(async () => {
+    if (!currentItem || !identity) {
+      return;
+    }
+
+    const titleId = currentItem.title_id;
+    const userId = identity.guestId;
+    const isSaved = savedIds.has(titleId);
+
+    try {
+      if (isSaved) {
+        const response = await fetch(
+          `/api/v1/me/watchlist/${titleId}?user_id=${userId}`,
+          { method: "DELETE" }
+        );
+
+        if (!response.ok) {
+          throw new Error("No se pudo quitar de la lista.");
+        }
+
+        setSavedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(titleId);
+          return next;
+        });
+
+        sendEvents([
+          {
+            name: "unsave_watchlist",
+            title_id: titleId,
+            position_in_feed: currentIndex + 1
+          }
+        ]);
+      } else {
+        const response = await fetch(
+          `/api/v1/me/watchlist/${titleId}?user_id=${userId}`,
+          { method: "POST" }
+        );
+
+        if (!response.ok) {
+          throw new Error("No se pudo guardar en la lista.");
+        }
+
+        setSavedIds((prev) => new Set(prev).add(titleId));
+        sendEvents([
+          {
+            name: "save_watchlist",
+            title_id: titleId,
+            position_in_feed: currentIndex + 1
+          }
+        ]);
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Error inesperado";
+      setError(message);
+    }
+  }, [currentItem, currentIndex, identity, savedIds, sendEvents]);
+
+  const handleFeedback = useCallback(
+    (type: "like" | "dislike") => {
+      if (!currentItem) {
+        return;
+      }
+
+      const titleId = currentItem.title_id;
+      setFeedback((prev) => ({
+        ...prev,
+        [titleId]: prev[titleId] === type ? prev[titleId] : type
+      }));
+
+      sendEvents([
+        {
+          name:
+            type === "like"
+              ? "feedback_more_like_this"
+              : "feedback_less_like_this",
+          title_id: titleId,
+          position_in_feed: currentIndex + 1
+        }
+      ]);
+    },
+    [currentItem, currentIndex, sendEvents]
+  );
+
+  const handleShare = useCallback(async () => {
+    if (!currentItem) {
+      return;
+    }
+
+    const shareUrl = trailerUrl ?? window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: currentItem.title,
+          url: shareUrl
+        });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(shareUrl);
+      }
+
+      sendEvents([
+        {
+          name: "share_click",
+          title_id: currentItem.title_id,
+          position_in_feed: currentIndex + 1
+        }
+      ]);
+    } catch (err) {
+      console.warn("Share failed", err);
+    }
+  }, [currentItem, currentIndex, sendEvents, trailerUrl]);
+
   const activeFilters = useMemo(() => {
     const tags: string[] = [];
 
@@ -219,11 +510,37 @@ export default function Home() {
   }, [filterState]);
 
   const handlePrev = () => {
-    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : prev));
+    setCurrentIndex((prev) => {
+      const nextIndex = prev > 0 ? prev - 1 : prev;
+      if (nextIndex !== prev) {
+        const nextItem = items[nextIndex];
+        sendEvents([
+          {
+            name: "swipe_prev",
+            title_id: nextItem?.title_id,
+            position_in_feed: nextIndex + 1
+          }
+        ]);
+      }
+      return nextIndex;
+    });
   };
 
   const handleNext = () => {
-    setCurrentIndex((prev) => (prev < items.length - 1 ? prev + 1 : prev));
+    setCurrentIndex((prev) => {
+      const nextIndex = prev < items.length - 1 ? prev + 1 : prev;
+      if (nextIndex !== prev) {
+        const nextItem = items[nextIndex];
+        sendEvents([
+          {
+            name: "swipe_next",
+            title_id: nextItem?.title_id,
+            position_in_feed: nextIndex + 1
+          }
+        ]);
+      }
+      return nextIndex;
+    });
   };
 
   const toggleMulti = (
@@ -260,6 +577,9 @@ export default function Home() {
       year: prev.year?.value === value.value ? null : value,
     }));
   };
+
+  const isSaved = currentItem ? savedIds.has(currentItem.title_id) : false;
+  const currentFeedback = currentItem ? feedback[currentItem.title_id] : undefined;
 
   return (
     <div className={styles.page}>
@@ -465,17 +785,56 @@ export default function Home() {
               <span>{currentItem?.genres.slice(0, 2).join(" / ") ?? "-"}</span>
             </div>
             <div className={styles.detailsActions}>
-              <button className={styles.primarySmall} type="button">
-                Guardar en lista
+              <button
+                className={`${styles.primarySmall} ${
+                  isSaved ? styles.actionActive : ""
+                }`}
+                type="button"
+                onClick={handleSaveToggle}
+              >
+                {isSaved ? "En lista" : "Guardar en lista"}
               </button>
-              <button className={styles.secondarySmall} type="button">
+              <button
+                className={`${styles.secondarySmall} ${
+                  currentFeedback === "like" ? styles.actionActive : ""
+                }`}
+                type="button"
+                onClick={() => handleFeedback("like")}
+              >
                 Mas como esto
               </button>
-              <button className={styles.secondarySmall} type="button">
+              <button
+                className={`${styles.secondarySmall} ${
+                  currentFeedback === "dislike" ? styles.actionActive : ""
+                }`}
+                type="button"
+                onClick={() => handleFeedback("dislike")}
+              >
                 Menos como esto
               </button>
+              <button
+                className={styles.secondarySmall}
+                type="button"
+                onClick={handleShare}
+              >
+                Compartir
+              </button>
               {trailerUrl ? (
-                <a className={styles.link} href={trailerUrl}>
+                <a
+                  className={styles.link}
+                  href={trailerUrl}
+                  onClick={() =>
+                    sendEvents([
+                      {
+                        name: "trailer_play",
+                        title_id: currentItem?.title_id,
+                        position_in_feed: currentIndex + 1
+                      }
+                    ])
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   Ver trailer
                 </a>
               ) : (

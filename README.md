@@ -34,9 +34,12 @@ Raw spec endpoint: /api/openapi
 ## Analytics (events batch)
 The POST /api/v1/events endpoint stores analytics events in batch to reduce
 network calls and enable core product metrics (completion, saves, shares, etc.).
+Guest sessions are identified with a persistent `guest_id` (localStorage) and
+per-session `session_id` (sessionStorage), both sent with every event.
 
 ## UI
 - Feed UI (prototype) at / (sidebar + viewer + details panel)
+- Details actions are wired to events + watchlist: save, like/dislike, share
 
 ## Database (Prisma + Postgres)
 1) Run Postgres with Docker: `docker compose -f infra/docker-compose.yml up -d`.
