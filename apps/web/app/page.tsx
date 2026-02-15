@@ -114,6 +114,8 @@ const labelFor = (options: { label: string; value: string }[], value: string) =>
 
 const guestIdStorageKey = "reelio_guest_id";
 const sessionIdStorageKey = "reelio_session_id";
+const teaserStorageKey = "reelio_teaser_mode";
+const teaserSeconds = 30;
 
 const createId = () => {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -166,6 +168,7 @@ export default function Home() {
   );
   const [collectionsLoading, setCollectionsLoading] = useState(true);
   const [collectionsError, setCollectionsError] = useState<string | null>(null);
+  const [teaserMode, setTeaserMode] = useState(false);
   const previousFilterRef = useRef<string | null>(null);
 
   const sharedTitleId = useMemo(() => {
@@ -236,6 +239,11 @@ export default function Home() {
     const guestId = getOrCreateId(localStorage, guestIdStorageKey);
     const sessionId = getOrCreateId(sessionStorage, sessionIdStorageKey);
     setIdentity({ guestId, sessionId });
+  }, []);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(teaserStorageKey);
+    setTeaserMode(stored === "true");
   }, []);
 
   useEffect(() => {
@@ -478,6 +486,18 @@ export default function Home() {
   const trailerUrl = currentItem?.trailer?.video_id
     ? `https://www.youtube.com/watch?v=${currentItem.trailer.video_id}`
     : null;
+  const trailerLink = useMemo(() => {
+    if (!trailerUrl) {
+      return null;
+    }
+    if (!teaserMode) {
+      return trailerUrl;
+    }
+    const url = new URL(trailerUrl);
+    url.searchParams.set("start", "0");
+    url.searchParams.set("end", String(teaserSeconds));
+    return url.toString();
+  }, [teaserMode, trailerUrl]);
 
   useEffect(() => {
     if (!identity || !currentItem) {
@@ -606,6 +626,14 @@ export default function Home() {
       console.warn("Share failed", err);
     }
   }, [currentItem, currentIndex, sendEvents, trailerUrl]);
+
+  const handleToggleTeaser = () => {
+    setTeaserMode((prev) => {
+      const next = !prev;
+      localStorage.setItem(teaserStorageKey, String(next));
+      return next;
+    });
+  };
 
   const activeFilters = useMemo(() => {
     const tags: string[] = [];
@@ -737,9 +765,20 @@ export default function Home() {
             <span>Feed curado</span>
             <p>Descubre trailers con filtros y moods.</p>
           </div>
-          <button className={styles.ghost} type="button">
-            Buscar
-          </button>
+          <div className={styles.topbarActions}>
+            <button
+              className={`${styles.toggleButton} ${
+                teaserMode ? styles.toggleActive : ""
+              }`}
+              type="button"
+              onClick={handleToggleTeaser}
+            >
+              Teaser {teaserSeconds}s: {teaserMode ? "On" : "Off"}
+            </button>
+            <button className={styles.ghost} type="button">
+              Buscar
+            </button>
+          </div>
         </header>
 
         <section className={styles.filters}>
@@ -886,7 +925,9 @@ export default function Home() {
                   ) : (
                     <div className={styles.mediaFallback}>Sin poster</div>
                   )}
-                  <div className={styles.mediaTag}>Trailer</div>
+                  <div className={styles.mediaTag}>
+                    {teaserMode ? `Teaser ${teaserSeconds}s` : "Trailer"}
+                  </div>
                 </div>
                 <div className={styles.viewerControls}>
                   <button
@@ -983,23 +1024,27 @@ export default function Home() {
                   >
                     Compartir
                   </button>
-                  {trailerUrl ? (
+                  {trailerLink ? (
                     <a
                       className={styles.link}
-                      href={trailerUrl}
+                      href={trailerLink}
                       onClick={() =>
                         sendEvents([
                           {
                             name: "trailer_play",
                             title_id: currentItem?.title_id,
-                            position_in_feed: currentIndex + 1
+                            position_in_feed: currentIndex + 1,
+                            metadata: {
+                              teaser_mode: teaserMode,
+                              teaser_seconds: teaserSeconds
+                            }
                           }
                         ])
                       }
                       target="_blank"
                       rel="noreferrer"
                     >
-                      Ver trailer
+                      {teaserMode ? `Ver trailer (${teaserSeconds}s)` : "Ver trailer completo"}
                     </a>
                   ) : (
                     <span className={styles.muted}>Sin trailer</span>

@@ -63,6 +63,12 @@
   gap: 16px;
 }
 
+.topbarActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .topbarTitle span {
   font-size: 18px;
   font-weight: 600;
@@ -107,6 +113,22 @@
   color: var(--fg);
   padding: 6px 14px;
   font-size: 12px;
+}
+
+.toggleButton {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--muted);
+  padding: 8px 14px;
+  font-size: 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.toggleActive {
+  color: var(--fg);
+  border-color: rgba(255, 179, 71, 0.55);
+  background: rgba(255, 179, 71, 0.18);
 }
 
 .filters {
@@ -168,6 +190,17 @@
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 24px 50px rgba(5, 8, 20, 0.45);
+}
+
+.mediaTag {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: rgba(12, 13, 20, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .trailerFrame img {
