@@ -153,6 +153,35 @@ paths:
                 properties:
                   accepted:
                     type: integer
+  /collections:
+    get:
+      summary: Get editorial collections
+      responses:
+        "200":
+          description: Collections response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  collections:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        slug:
+                          type: string
+                        title:
+                          type: string
+                        description:
+                          type: string
+                          nullable: true
+                        items:
+                          type: array
+                          items:
+                            $ref: "#/components/schemas/FeedCard"
   /titles/{title_id}:
     get:
       summary: Get title details
