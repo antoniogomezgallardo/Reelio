@@ -305,6 +305,64 @@ export default function Home() {
     previousFilterRef.current = filterSignature;
   }, [filterSignature, filterState, sendEvents]);
 
+
+  useEffect(() => {
+    let active = true;
+
+    setLoading(true);
+    setError(null);
+    setItems([]);
+
+    fetchFeed()
+      .then((data) => {
+        if (!active) {
+          return;
+        }
+        setItems(data.items);
+        setCursor(data.next_cursor);
+        setCurrentIndex(0);
+      })
+      .catch((err: unknown) => {
+        if (!active) {
+          return;
+        }
+        const message = err instanceof Error ? err.message : "Error inesperado";
+        setError(message);
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [fetchFeed]);
+
+  const handleLoadMore = async () => {
+    if (!cursor || loadingMore) {
+      return;
+    }
+    setLoadingMore(true);
+    try {
+      const data = await fetchFeed(cursor);
+      setItems((prev) => [...prev, ...data.items]);
+      setCursor(data.next_cursor);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Error inesperado";
+      setError(message);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const emptyState = !loading && items.length === 0 && !error;
+  const currentItem = items[currentIndex] ?? null;
+  const trailerUrl = currentItem?.trailer?.video_id
+    ? `https://www.youtube.com/watch?v=${currentItem.trailer.video_id}`
+    : null;
+
   useEffect(() => {
     if (!identity || !currentItem) {
       return;
@@ -430,63 +488,6 @@ export default function Home() {
       console.warn("Share failed", err);
     }
   }, [currentItem, currentIndex, sendEvents, trailerUrl]);
-
-  useEffect(() => {
-    let active = true;
-
-    setLoading(true);
-    setError(null);
-    setItems([]);
-
-    fetchFeed()
-      .then((data) => {
-        if (!active) {
-          return;
-        }
-        setItems(data.items);
-        setCursor(data.next_cursor);
-        setCurrentIndex(0);
-      })
-      .catch((err: unknown) => {
-        if (!active) {
-          return;
-        }
-        const message = err instanceof Error ? err.message : "Error inesperado";
-        setError(message);
-      })
-      .finally(() => {
-        if (active) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [fetchFeed]);
-
-  const handleLoadMore = async () => {
-    if (!cursor || loadingMore) {
-      return;
-    }
-    setLoadingMore(true);
-    try {
-      const data = await fetchFeed(cursor);
-      setItems((prev) => [...prev, ...data.items]);
-      setCursor(data.next_cursor);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Error inesperado";
-      setError(message);
-    } finally {
-      setLoadingMore(false);
-    }
-  };
-
-  const emptyState = !loading && items.length === 0 && !error;
-  const currentItem = items[currentIndex] ?? null;
-  const trailerUrl = currentItem?.trailer?.video_id
-    ? `https://www.youtube.com/watch?v=${currentItem.trailer.video_id}`
-    : null;
 
   const activeFilters = useMemo(() => {
     const tags: string[] = [];
