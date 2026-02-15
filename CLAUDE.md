@@ -373,6 +373,9 @@ Convenciones:
 - Progreso: endpoints de watchlist implementados (GET/POST/DELETE)
 - Progreso: endpoint de eventos batch implementado (POST /api/v1/events)
 - Nota: events batch guarda analitica con user/guest/session para medir retencion y conversion
+- Progreso: acciones UI (guardar, like/dislike, share) conectadas a eventos
+- Progreso: guest_id persistente + session_id por sesion para analitica y watchlist
+- Progreso: estado inicial de watchlist cargado en UI
 - Docs: OpenAPI disponible (openapi.yaml + /api/openapi) y Swagger UI en /api/docs
 - Docs: ARCHITECTURE.md con explicacion de arquitectura y decisiones
 
