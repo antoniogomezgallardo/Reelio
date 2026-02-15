@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import styles from "./page.module.css";
 
 type FeedTrailer = {
@@ -26,7 +26,39 @@ type FeedResponse = {
   next_cursor: string | null;
 };
 
-const filters = ["Peliculas", "Series", "Thriller", "Noir", "Cine ES", "1980-1999"];
+const typeOptions = [
+  { label: "Peliculas", value: "movie" },
+  { label: "Series", value: "tv" },
+];
+
+const genreOptions = [
+  { label: "Thriller", value: "thriller" },
+  { label: "Noir", value: "noir" },
+  { label: "Drama", value: "drama" },
+  { label: "Horror", value: "horror" },
+  { label: "Misterio", value: "mystery" },
+];
+
+const countryOptions = [
+  { label: "ES", value: "ES" },
+  { label: "US", value: "US" },
+  { label: "FR", value: "FR" },
+  { label: "IT", value: "IT" },
+];
+
+const languageOptions = [
+  { label: "ES", value: "es" },
+  { label: "EN", value: "en" },
+  { label: "FR", value: "fr" },
+  { label: "IT", value: "it" },
+];
+
+const yearOptions = [
+  { label: "1980-1999", min: 1980, max: 1999, value: "1980-1999" },
+  { label: "2000-2010", min: 2000, max: 2010, value: "2000-2010" },
+  { label: "2011-2020", min: 2011, max: 2020, value: "2011-2020" },
+  { label: "2021-2025", min: 2021, max: 2025, value: "2021-2025" },
+];
 
 const moods = [
   "Tension",
@@ -37,6 +69,25 @@ const moods = [
   "Melancolia",
 ];
 
+type FilterState = {
+  type: "all" | "movie" | "tv";
+  genres: string[];
+  countries: string[];
+  languages: string[];
+  year: { label: string; min: number; max: number; value: string } | null;
+};
+
+const initialFilters: FilterState = {
+  type: "all",
+  genres: [],
+  countries: [],
+  languages: [],
+  year: null,
+};
+
+const labelFor = (options: { label: string; value: string }[], value: string) =>
+  options.find((option) => option.value === value)?.label ?? value;
+
 export default function Home() {
   const [items, setItems] = useState<FeedItem[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -45,23 +96,57 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [filterState, setFilterState] = useState<FilterState>(initialFilters);
 
-  const fetchFeed = useCallback(async (nextCursor?: string | null) => {
-    const url = new URL("/api/v1/feed", window.location.origin);
-    if (nextCursor) {
-      url.searchParams.set("cursor", nextCursor);
+  const queryString = useMemo(() => {
+    const params = new URLSearchParams();
+
+    if (filterState.type !== "all") {
+      params.set("type", filterState.type);
+    }
+    if (filterState.genres.length > 0) {
+      params.set("genres", filterState.genres.join(","));
+    }
+    if (filterState.countries.length > 0) {
+      params.set("countries", filterState.countries.join(","));
+    }
+    if (filterState.languages.length > 0) {
+      params.set("lang", filterState.languages.join(","));
+    }
+    if (filterState.year) {
+      params.set("year_min", String(filterState.year.min));
+      params.set("year_max", String(filterState.year.max));
     }
 
-    const response = await fetch(url.toString());
-    if (!response.ok) {
-      throw new Error("No se pudo cargar el feed.");
-    }
+    return params.toString();
+  }, [filterState]);
 
-    return (await response.json()) as FeedResponse;
-  }, []);
+  const fetchFeed = useCallback(
+    async (nextCursor?: string | null) => {
+      const url = new URL("/api/v1/feed", window.location.origin);
+      if (queryString) {
+        url.search = queryString;
+      }
+      if (nextCursor) {
+        url.searchParams.set("cursor", nextCursor);
+      }
+
+      const response = await fetch(url.toString());
+      if (!response.ok) {
+        throw new Error("No se pudo cargar el feed.");
+      }
+
+      return (await response.json()) as FeedResponse;
+    },
+    [queryString]
+  );
 
   useEffect(() => {
     let active = true;
+
+    setLoading(true);
+    setError(null);
+    setItems([]);
 
     fetchFeed()
       .then((data) => {
@@ -113,6 +198,26 @@ export default function Home() {
     ? `https://www.youtube.com/watch?v=${currentItem.trailer.video_id}`
     : null;
 
+  const activeFilters = useMemo(() => {
+    const tags: string[] = [];
+
+    if (filterState.type !== "all") {
+      tags.push(labelFor(typeOptions, filterState.type));
+    }
+    tags.push(...filterState.genres.map((value) => labelFor(genreOptions, value)));
+    tags.push(
+      ...filterState.countries.map((value) => labelFor(countryOptions, value))
+    );
+    tags.push(
+      ...filterState.languages.map((value) => labelFor(languageOptions, value))
+    );
+    if (filterState.year) {
+      tags.push(filterState.year.label);
+    }
+
+    return tags;
+  }, [filterState]);
+
   const handlePrev = () => {
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : prev));
   };
@@ -121,11 +226,44 @@ export default function Home() {
     setCurrentIndex((prev) => (prev < items.length - 1 ? prev + 1 : prev));
   };
 
+  const toggleMulti = (
+    key: "genres" | "countries" | "languages",
+    value: string
+  ) => {
+    setFilterState((prev) => {
+      const current = prev[key];
+      const exists = current.includes(value);
+      return {
+        ...prev,
+        [key]: exists
+          ? current.filter((entry) => entry !== value)
+          : [...current, value],
+      };
+    });
+  };
+
+  const toggleType = (value: "movie" | "tv") => {
+    setFilterState((prev) => ({
+      ...prev,
+      type: prev.type === value ? "all" : value,
+    }));
+  };
+
+  const toggleYear = (value: {
+    label: string;
+    min: number;
+    max: number;
+    value: string;
+  }) => {
+    setFilterState((prev) => ({
+      ...prev,
+      year: prev.year?.value === value.value ? null : value,
+    }));
+  };
+
   return (
     <div className={styles.page}>
-      <aside
-        className={`${styles.sidebar} ${menuOpen ? styles.sidebarOpen : ""}`}
-      >
+      <aside className={`${styles.sidebar} ${menuOpen ? styles.sidebarOpen : ""}`}>
         <div className={styles.sidebarHeader}>
           <span className={styles.brand}>Reelio</span>
           <button
@@ -167,11 +305,103 @@ export default function Home() {
         </header>
 
         <section className={styles.filters}>
-          {filters.map((filter) => (
-            <button className={styles.filterChip} key={filter} type="button">
-              {filter}
-            </button>
-          ))}
+          <div className={styles.filterGroup}>
+            <span className={styles.filterLabel}>Tipo</span>
+            <div className={styles.filterRow}>
+              {typeOptions.map((option) => (
+                <button
+                  className={`${styles.filterChip} ${
+                    filterState.type === option.value ? styles.filterActive : ""
+                  }`}
+                  key={option.value}
+                  type="button"
+                  onClick={() => toggleType(option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.filterGroup}>
+            <span className={styles.filterLabel}>Genero</span>
+            <div className={styles.filterRow}>
+              {genreOptions.map((option) => (
+                <button
+                  className={`${styles.filterChip} ${
+                    filterState.genres.includes(option.value)
+                      ? styles.filterActive
+                      : ""
+                  }`}
+                  key={option.value}
+                  type="button"
+                  onClick={() => toggleMulti("genres", option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.filterGroup}>
+            <span className={styles.filterLabel}>Pais</span>
+            <div className={styles.filterRow}>
+              {countryOptions.map((option) => (
+                <button
+                  className={`${styles.filterChip} ${
+                    filterState.countries.includes(option.value)
+                      ? styles.filterActive
+                      : ""
+                  }`}
+                  key={option.value}
+                  type="button"
+                  onClick={() => toggleMulti("countries", option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.filterGroup}>
+            <span className={styles.filterLabel}>Ano</span>
+            <div className={styles.filterRow}>
+              {yearOptions.map((option) => (
+                <button
+                  className={`${styles.filterChip} ${
+                    filterState.year?.value === option.value
+                      ? styles.filterActive
+                      : ""
+                  }`}
+                  key={option.value}
+                  type="button"
+                  onClick={() => toggleYear(option)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.filterGroup}>
+            <span className={styles.filterLabel}>Idioma</span>
+            <div className={styles.filterRow}>
+              {languageOptions.map((option) => (
+                <button
+                  className={`${styles.filterChip} ${
+                    filterState.languages.includes(option.value)
+                      ? styles.filterActive
+                      : ""
+                  }`}
+                  key={option.value}
+                  type="button"
+                  onClick={() => toggleMulti("languages", option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </section>
 
         <div className={styles.content}>
@@ -188,20 +418,25 @@ export default function Home() {
               <>
                 <div className={styles.trailerFrame}>
                   {currentItem.poster_url ? (
-                    <img
-                      src={currentItem.poster_url}
-                      alt={currentItem.title}
-                    />
+                    <img src={currentItem.poster_url} alt={currentItem.title} />
                   ) : (
                     <div className={styles.mediaFallback}>Sin poster</div>
                   )}
                   <div className={styles.mediaTag}>Trailer</div>
                 </div>
                 <div className={styles.viewerControls}>
-                  <button className={styles.secondarySmall} type="button" onClick={handlePrev}>
+                  <button
+                    className={styles.secondarySmall}
+                    type="button"
+                    onClick={handlePrev}
+                  >
                     Anterior
                   </button>
-                  <button className={styles.primarySmall} type="button" onClick={handleNext}>
+                  <button
+                    className={styles.primarySmall}
+                    type="button"
+                    onClick={handleNext}
+                  >
                     Siguiente
                   </button>
                   <div className={styles.viewerMeta}>
@@ -250,15 +485,17 @@ export default function Home() {
             <div className={styles.detailsFilters}>
               <h3>Filtros activos</h3>
               <div className={styles.detailsTags}>
-                {filters.slice(0, 3).map((filter) => (
-                  <span key={filter}>{filter}</span>
-                ))}
+                {activeFilters.length > 0 ? (
+                  activeFilters.map((filter) => <span key={filter}>{filter}</span>)
+                ) : (
+                  <span>Sin filtros</span>
+                )}
               </div>
             </div>
           </aside>
         </div>
 
-        <footer className={styles.footer}> 
+        <footer className={styles.footer}>
           <button
             className={styles.loadMore}
             type="button"
