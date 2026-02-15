@@ -298,6 +298,78 @@
   color: #ff8f8f;
 }
 
+.stateBlock {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+}
+
+.retryButton {
+  background: rgba(255, 179, 71, 0.18);
+  border: 1px solid rgba(255, 179, 71, 0.55);
+  color: var(--fg);
+  padding: 8px 16px;
+  font-size: 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.skeletonViewer,
+.skeletonDetails {
+  display: grid;
+  gap: 16px;
+}
+
+.skeletonPoster,
+.skeletonTitle,
+.skeletonLine,
+.skeletonLineShort,
+.skeletonChip,
+.skeletonPill {
+  background: linear-gradient(110deg, rgba(255, 255, 255, 0.08) 8%, rgba(255, 255, 255, 0.18) 18%, rgba(255, 255, 255, 0.08) 33%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 999px;
+}
+
+.skeletonPoster {
+  height: 420px;
+  border-radius: 20px;
+}
+
+.skeletonTitle {
+  height: 24px;
+  width: 70%;
+}
+
+.skeletonLine {
+  height: 14px;
+  width: 100%;
+  border-radius: 12px;
+}
+
+.skeletonLineShort {
+  height: 14px;
+  width: 65%;
+  border-radius: 12px;
+}
+
+.skeletonRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.skeletonChip {
+  height: 18px;
+  width: 70px;
+}
+
+.skeletonPill {
+  height: 26px;
+  width: 90px;
+}
+
 .footer {
   display: flex;
   justify-content: center;
@@ -331,6 +403,15 @@
   to {
     transform: translateY(0);
     opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }
 
