@@ -22,6 +22,9 @@ Web-first MVP for a trailer discovery app. See CLAUDE.md for product context and
 ## API
 - GET /api/v1/feed
 	- Query: type, genres, countries, year_min, year_max, lang, cursor
+- GET /api/v1/me/watchlist?user_id=...
+- POST /api/v1/me/watchlist/:title_id?user_id=...
+- DELETE /api/v1/me/watchlist/:title_id?user_id=...
 
 ## UI
 - Feed UI (prototype) at / (sidebar + viewer + details panel)

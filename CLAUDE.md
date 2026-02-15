@@ -370,6 +370,7 @@ Convenciones:
 - Progreso: endpoint de feed basico implementado (GET /api/v1/feed)
 - Progreso: UI inicial del feed (prototipo)
 - Progreso: filtros conectados al feed (UI + query)
+- Progreso: endpoints de watchlist implementados (GET/POST/DELETE)
 - Docs: ARCHITECTURE.md con explicacion de arquitectura y decisiones
 
 (Actualiza esta sección conforme avances.)
