@@ -430,6 +430,8 @@ export default function Home() {
       console.warn("Share failed", err);
     }
   }, [currentItem, currentIndex, sendEvents, trailerUrl]);
+
+  useEffect(() => {
     let active = true;
 
     setLoading(true);
