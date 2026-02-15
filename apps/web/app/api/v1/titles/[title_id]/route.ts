@@ -57,7 +57,8 @@ function toOverviewShort(overview?: string | null): string {
 }
 
 export async function GET(request: Request, { params }: Params) {
-  const titleId = params.title_id;
+  const pathname = new URL(request.url).pathname;
+  const titleId = params?.title_id ?? pathname.split("/").pop() ?? "";
 
   if (!titleId) {
     return NextResponse.json(
