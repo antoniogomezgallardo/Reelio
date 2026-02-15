@@ -27,6 +27,16 @@ type FeedResponse = {
   next_cursor: string | null;
 };
 
+type CollectionResponse = {
+  collections: {
+    id: string;
+    slug: string;
+    title: string;
+    description: string | null;
+    items: FeedItem[];
+  }[];
+};
+
 type AnalyticsEvent = {
   name: string;
   timestamp?: string;
@@ -151,6 +161,11 @@ export default function Home() {
   const [feedback, setFeedback] = useState<Record<string, "like" | "dislike">>(
     {}
   );
+  const [collections, setCollections] = useState<CollectionResponse["collections"]>(
+    []
+  );
+  const [collectionsLoading, setCollectionsLoading] = useState(true);
+  const [collectionsError, setCollectionsError] = useState<string | null>(null);
   const previousFilterRef = useRef<string | null>(null);
 
   const sharedTitleId = useMemo(() => {
@@ -209,11 +224,50 @@ export default function Home() {
     return (await response.json()) as { item: FeedItem };
   }, []);
 
+  const fetchCollections = useCallback(async () => {
+    const response = await fetch("/api/v1/collections");
+    if (!response.ok) {
+      throw new Error("No se pudieron cargar las colecciones.");
+    }
+    return (await response.json()) as CollectionResponse;
+  }, []);
+
   useEffect(() => {
     const guestId = getOrCreateId(localStorage, guestIdStorageKey);
     const sessionId = getOrCreateId(sessionStorage, sessionIdStorageKey);
     setIdentity({ guestId, sessionId });
   }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    setCollectionsLoading(true);
+    setCollectionsError(null);
+
+    fetchCollections()
+      .then((data) => {
+        if (!active) {
+          return;
+        }
+        setCollections(data.collections);
+      })
+      .catch((err: unknown) => {
+        if (!active) {
+          return;
+        }
+        const message = err instanceof Error ? err.message : "Error inesperado";
+        setCollectionsError(message);
+      })
+      .finally(() => {
+        if (active) {
+          setCollectionsLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [fetchCollections]);
 
   useEffect(() => {
     if (!identity) {
@@ -978,6 +1032,49 @@ export default function Home() {
             {loadingMore ? "Cargando..." : cursor ? "Cargar mas" : "Fin del feed"}
           </button>
         </footer>
+
+        <section className={styles.collections}>
+          <div className={styles.collectionsHeader}>
+            <h3>Colecciones editoriales</h3>
+            <p>Selecciones curadas para descubrir rapido.</p>
+          </div>
+          {collectionsLoading && (
+            <p className={styles.collectionsState}>Cargando colecciones...</p>
+          )}
+          {!collectionsLoading && collectionsError && (
+            <p className={styles.collectionsState}>{collectionsError}</p>
+          )}
+          {!collectionsLoading && !collectionsError && (
+            <div className={styles.collectionsList}>
+              {collections.map((collection) => (
+                <div className={styles.collectionCard} key={collection.id}>
+                  <div className={styles.collectionHead}>
+                    <h4>{collection.title}</h4>
+                    <span>{collection.description ?? "Seleccion curada"}</span>
+                  </div>
+                  <div className={styles.collectionItems}>
+                    {collection.items.map((item) => (
+                      <a
+                        key={item.title_id}
+                        className={styles.collectionItem}
+                        href={`/?t=${encodeURIComponent(item.title_id)}`}
+                      >
+                        <div className={styles.collectionPoster}>
+                          {item.poster_url ? (
+                            <img src={item.poster_url} alt={item.title} />
+                          ) : (
+                            <div className={styles.mediaFallback}>Sin poster</div>
+                          )}
+                        </div>
+                        <span>{item.title}</span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );
