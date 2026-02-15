@@ -55,7 +55,7 @@ Este documento define el **MVP**, reglas de producto, arquitectura sugerida, mod
 - **Analítica de eventos** (ver sección 6).
 
 ### 2.2 v1.1 (post-MVP, pero preparar la base)
-- “Anti-spoiler mode”: solo teaser / primeros 30–45s
+- “Anti-spoiler mode”: solo teaser / primeros 30–45s (base con toggle 30s)
 - “Por qué te lo muestro” (explicación simple)
 - “Dónde verla” (si hay fuente fiable de disponibilidad)
 
@@ -255,6 +255,9 @@ Response:
 ### 8.2 Title details
 `GET /titles/:id`
 
+### 8.2.1 Colecciones editoriales
+`GET /collections`
+
 ### 8.3 Watchlist
 `GET /me/watchlist`
 `POST /me/watchlist/:title_id`
@@ -369,6 +372,8 @@ Convenciones:
 - Progreso: migracion inicial aplicada en Postgres local
 - Progreso: seed local creado (200 titles + colecciones)
 - Progreso: endpoint de feed basico implementado (GET /api/v1/feed)
+- Progreso: endpoint de title detail implementado (GET /api/v1/titles/:id)
+- Progreso: endpoint de colecciones editoriales (GET /api/v1/collections)
 - Progreso: UI inicial del feed (prototipo)
 - Progreso: filtros conectados al feed (UI + query)
 - Progreso: endpoints de watchlist implementados (GET/POST/DELETE)
@@ -377,7 +382,11 @@ Convenciones:
 - Progreso: acciones UI (guardar, like/dislike, share) conectadas a eventos
 - Progreso: guest_id persistente + session_id por sesion para analitica y watchlist
 - Progreso: estado inicial de watchlist cargado en UI
+- Progreso: deep links con ?t=title_id para compartir cards
+- Progreso: teaser mode con toggle 30s en la topbar
+- Progreso: logging basico en API + UI error boundary
 - Docs: OpenAPI disponible (openapi.yaml + /api/openapi) y Swagger UI en /api/docs
 - Docs: ARCHITECTURE.md con explicacion de arquitectura y decisiones
+- Docs: docs/spikes/metadata-provider.md con propuesta de provider
 
 (Actualiza esta sección conforme avances.)

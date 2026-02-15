@@ -115,6 +115,20 @@ How they work:
 - A request hits /api/v1/feed.
 - Code queries Prisma and returns JSON.
 
+Current API surface (MVP):
+- GET /api/v1/feed
+- GET /api/v1/titles/:title_id
+- GET /api/v1/collections
+- GET /api/v1/me/watchlist?user_id=...
+- POST /api/v1/me/watchlist/:title_id?user_id=...
+- DELETE /api/v1/me/watchlist/:title_id?user_id=...
+- POST /api/v1/events
+
+Contract docs:
+- OpenAPI spec: openapi.yaml
+- Swagger UI: /api/docs
+- Raw spec: /api/openapi
+
 ## 10) How the tools relate
 - Next.js hosts both UI and API.
 - TypeScript is used everywhere.
@@ -122,25 +136,34 @@ How they work:
 - Postgres stores the data.
 - Docker runs Postgres locally.
 
-## 11) Why not other options (brief)
+## 11) Observability (MVP)
+What we do now:
+- Console logging in API routes with request context for errors/warnings.
+- Global UI error boundary to surface render failures.
+
+Why it matters:
+- Fast debugging without adding external services yet.
+
+## 12) Why not other options (brief)
 - Separate backend (Fastify/Nest): great later, but adds complexity now.
 - No ORM: raw SQL is powerful but slower to build and easy to break.
 - SQLite: simpler, but not ideal for production parity.
 
-## 12) Current MVP decisions recap
+## 13) Current MVP decisions recap
 - Web-first MVP in Next.js to iterate quickly.
 - Monorepo to keep UI + API + shared code together.
 - Postgres for relational data.
 - Prisma for schema and typed queries.
 - Docker for local DB consistency.
+- OpenAPI for contract visibility.
 
-## 13) If we scale later
+## 14) If we scale later
 - Split API into apps/api (Fastify or Nest).
 - Add Redis cache for feed.
 - Add background jobs for ingestion.
 - Add provider adapters (TMDB, etc).
 
-## 14) Quick glossary
+## 15) Quick glossary
 - Monorepo: one repo, many apps.
 - API route: server endpoint inside Next.js.
 - ORM: tool that maps tables to code models.
