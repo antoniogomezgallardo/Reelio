@@ -372,6 +372,7 @@ Convenciones:
 - Progreso: filtros conectados al feed (UI + query)
 - Progreso: endpoints de watchlist implementados (GET/POST/DELETE)
 - Progreso: endpoint de eventos batch implementado (POST /api/v1/events)
+- Nota: events batch guarda analitica con user/guest/session para medir retencion y conversion
 - Docs: OpenAPI disponible (openapi.yaml + /api/openapi) y Swagger UI en /api/docs
 - Docs: ARCHITECTURE.md con explicacion de arquitectura y decisiones
 
