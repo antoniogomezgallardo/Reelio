@@ -309,7 +309,8 @@ Convenciones:
 - Los avances se reflejan moviendo la card en el Project (Backlog → In Progress → Review → Done).
 - Usaremos Git como VCS y el remoto principal será GitHub.
 - Los commits deben seguir buenas prácticas: mensajes cortos, claros y con prefijo (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`).
-- Se trabaja en ramas y se integra por PR; cada PR debe referenciar su issue.
+- Se trabaja en ramas por issue y se integra por PR; no se trabaja directo en `main`.
+- Cada PR debe referenciar su issue y describir cambios, riesgos y pruebas realizadas.
 
 ---
 
