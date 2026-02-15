@@ -32,6 +32,15 @@ type EventPayload = {
   metadata?: unknown;
 };
 
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isUuid(value?: string) {
+  if (!value) {
+    return false;
+  }
+  return uuidRegex.test(value);
+}
+
 function parseTimestamp(value?: string) {
   if (!value) {
     return null;
@@ -73,7 +82,7 @@ export async function POST(request: Request) {
   }
 
   const userIds = Array.from(
-    new Set(events.map((event) => event.user_id).filter(Boolean))
+    new Set(events.map((event) => event.user_id).filter((id) => isUuid(id)))
   ) as string[];
 
   if (userIds.length > 0) {
@@ -85,11 +94,11 @@ export async function POST(request: Request) {
 
   const records = events.map((event) => ({
     name: event.name,
-    userId: event.user_id ?? null,
+    userId: isUuid(event.user_id) ? event.user_id ?? null : null,
     guestId: event.guest_id ?? null,
     sessionId: event.session_id ?? null,
-    titleId: event.title_id ?? null,
-    trailerId: event.trailer_id ?? null,
+    titleId: isUuid(event.title_id) ? event.title_id ?? null : null,
+    trailerId: isUuid(event.trailer_id) ? event.trailer_id ?? null : null,
     positionInFeed:
       typeof event.position_in_feed === "number"
         ? event.position_in_feed
