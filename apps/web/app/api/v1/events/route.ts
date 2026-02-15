@@ -56,6 +56,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
 
   if (!body || !Array.isArray(body.events)) {
+    console.warn("Events payload invalid", { url: request.url });
     return NextResponse.json(
       { error: "Invalid payload. Expected { events: [] }." },
       { status: 400 }
@@ -64,6 +65,7 @@ export async function POST(request: Request) {
 
   const events = body.events as EventPayload[];
   if (events.length === 0) {
+    console.warn("Events payload empty", { url: request.url });
     return NextResponse.json(
       { error: "Events array is empty." },
       { status: 400 }
@@ -72,6 +74,10 @@ export async function POST(request: Request) {
 
   const invalid = events.filter((event) => !allowedEventNames.has(event.name));
   if (invalid.length > 0) {
+    console.warn("Events payload invalid names", {
+      url: request.url,
+      invalid: invalid.map((event) => event.name)
+    });
     return NextResponse.json(
       {
         error: "One or more events have an invalid name.",
@@ -117,7 +123,10 @@ export async function POST(request: Request) {
       accepted: records.length
     });
   } catch (error) {
-    console.error("Events batch insert failed", error);
+    console.error("Events batch insert failed", {
+      error,
+      url: request.url
+    });
     return NextResponse.json(
       { error: "Failed to record events." },
       { status: 500 }
