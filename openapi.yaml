@@ -1,0 +1,168 @@
+openapi: 3.0.3
+info:
+  title: Reelio API
+  version: 0.1.0
+  description: API surface for the Reelio MVP.
+servers:
+  - url: http://localhost:3000/api/v1
+paths:
+  /feed:
+    get:
+      summary: Get feed
+      parameters:
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [movie, tv, all]
+        - in: query
+          name: genres
+          schema:
+            type: string
+          description: Comma-separated genres
+        - in: query
+          name: countries
+          schema:
+            type: string
+          description: Comma-separated country codes
+        - in: query
+          name: year_min
+          schema:
+            type: integer
+        - in: query
+          name: year_max
+          schema:
+            type: integer
+        - in: query
+          name: lang
+          schema:
+            type: string
+          description: Comma-separated language codes
+        - in: query
+          name: cursor
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Feed response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/FeedCard"
+                  next_cursor:
+                    type: string
+                    nullable: true
+  /me/watchlist:
+    get:
+      summary: Get watchlist
+      parameters:
+        - in: query
+          name: user_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Watchlist response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/FeedCard"
+  /me/watchlist/{title_id}:
+    post:
+      summary: Add to watchlist
+      parameters:
+        - in: path
+          name: title_id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: user_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: string
+                  title_id:
+                    type: string
+    delete:
+      summary: Remove from watchlist
+      parameters:
+        - in: path
+          name: title_id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: user_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: string
+                  title_id:
+                    type: string
+components:
+  schemas:
+    FeedCard:
+      type: object
+      properties:
+        title_id:
+          type: string
+        title:
+          type: string
+        year:
+          type: integer
+          nullable: true
+        countries:
+          type: array
+          items:
+            type: string
+        genres:
+          type: array
+          items:
+            type: string
+        overview_short:
+          type: string
+        poster_url:
+          type: string
+          nullable: true
+        trailer:
+          type: object
+          nullable: true
+          properties:
+            source:
+              type: string
+            video_id:
+              type: string
+            kind:
+              type: string
+            is_official:
+              type: boolean

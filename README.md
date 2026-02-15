@@ -26,6 +26,8 @@ Web-first MVP for a trailer discovery app. See CLAUDE.md for product context and
 - POST /api/v1/me/watchlist/:title_id?user_id=...
 - DELETE /api/v1/me/watchlist/:title_id?user_id=...
 
+OpenAPI spec: openapi.yaml
+
 ## UI
 - Feed UI (prototype) at / (sidebar + viewer + details panel)
 
