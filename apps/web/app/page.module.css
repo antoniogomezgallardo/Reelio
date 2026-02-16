@@ -188,7 +188,8 @@
   position: relative;
   border-radius: 20px;
   overflow: hidden;
-  min-height: 420px;
+  width: 100%;
+  height: clamp(280px, 40vw, 520px);
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 24px 50px rgba(5, 8, 20, 0.45);
@@ -207,6 +208,38 @@
 
 .mediaImage {
   object-fit: cover;
+  object-position: center;
+}
+
+.playButton {
+  position: absolute;
+  inset: auto;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(12, 13, 20, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--fg);
+  font-size: 13px;
+  font-weight: 600;
+  backdrop-filter: blur(6px);
+}
+
+.playIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 179, 71, 0.85);
+  color: #1f1404;
+  font-size: 12px;
 }
 
 .viewerControls {

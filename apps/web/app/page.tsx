@@ -953,6 +953,33 @@ export default function Home() {
                   ) : (
                     <div className={styles.mediaFallback}>Sin poster</div>
                   )}
+                  {trailerLink && currentItem && (
+                    <a
+                      className={styles.playButton}
+                      href={trailerLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label="Reproducir trailer"
+                      onClick={() =>
+                        sendEvents([
+                          {
+                            name: 'trailer_play',
+                            title_id: currentItem.title_id,
+                            position_in_feed: currentIndex + 1,
+                            metadata: {
+                              teaser_mode: teaserMode,
+                              teaser_seconds: teaserSeconds,
+                            },
+                          },
+                        ])
+                      }
+                    >
+                      <span className={styles.playIcon} aria-hidden="true">
+                        ▶
+                      </span>
+                      Reproducir
+                    </a>
+                  )}
                   <div className={styles.mediaTag}>
                     {teaserMode ? `Teaser ${teaserSeconds}s` : 'Trailer'}
                   </div>
