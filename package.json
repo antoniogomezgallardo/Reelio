@@ -19,7 +19,8 @@
     "prisma:generate": "npm run prisma:generate -w apps/web",
     "prisma:migrate": "npm run prisma:migrate -w apps/web",
     "prisma:studio": "npm run prisma:studio -w apps/web",
-    "prisma:seed": "npm run prisma:seed -w apps/web"
+    "prisma:seed": "npm run prisma:seed -w apps/web",
+    "ingest:tmdb": "npm run ingest:tmdb -w apps/web"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,css,md}": [

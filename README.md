@@ -32,6 +32,7 @@ Web-first MVP for a trailer discovery app. See CLAUDE.md for product context and
 - npm run prisma:migrate
 - npm run prisma:studio
 - npm run prisma:seed
+- npm run ingest:tmdb
 
 ## API
 
@@ -73,3 +74,8 @@ per-session `session_id` (sessionStorage), both sent with every event.
 3. Run `npm run prisma:migrate` to create the schema.
 4. Run `npm run prisma:seed` to load sample data.
 5. Run `npm run prisma:generate` after schema changes.
+
+## Ingestion (TMDB)
+
+1. Set `TMDB_API_KEY` in `apps/web/.env`.
+2. Run `npm run ingest:tmdb` to ingest real titles.
