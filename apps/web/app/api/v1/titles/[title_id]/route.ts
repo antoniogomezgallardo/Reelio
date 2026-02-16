@@ -98,6 +98,7 @@ export async function GET(request: Request, { params }: Params) {
       genres: title.genres,
       overview_short: toOverviewShort(title.overview),
       poster_url: title.posterUrl,
+      backdrop_url: title.backdropUrl,
       trailer: pickBestTrailer(title.trailers),
     };
 

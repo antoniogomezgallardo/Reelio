@@ -20,6 +20,7 @@ type FeedItem = {
   genres: string[];
   overview_short: string;
   poster_url: string | null;
+  backdrop_url: string | null;
   trailer: FeedTrailer | null;
 };
 
@@ -177,6 +178,7 @@ export default function Home() {
   const [collectionsLoading, setCollectionsLoading] = useState(true);
   const [collectionsError, setCollectionsError] = useState<string | null>(null);
   const [teaserMode, setTeaserMode] = useState(false);
+  const [isTrailerOpen, setIsTrailerOpen] = useState(false);
   const previousFilterRef = useRef<string | null>(null);
 
   const sharedTitleId = useMemo(() => {
@@ -493,21 +495,37 @@ export default function Home() {
 
   const emptyState = !loading && items.length === 0 && !error;
   const currentItem = items[currentIndex] ?? null;
-  const trailerUrl = currentItem?.trailer?.video_id
-    ? `https://www.youtube.com/watch?v=${currentItem.trailer.video_id}`
-    : null;
-  const trailerLink = useMemo(() => {
-    if (!trailerUrl) {
+  const heroImage = currentItem?.backdrop_url ?? currentItem?.poster_url;
+  const trailerEmbedUrl = useMemo(() => {
+    if (!currentItem?.trailer?.video_id) {
       return null;
     }
-    if (!teaserMode) {
-      return trailerUrl;
+    const url = new URL(
+      `https://www.youtube.com/embed/${currentItem.trailer.video_id}`,
+    );
+    url.searchParams.set('playsinline', '1');
+    url.searchParams.set('modestbranding', '1');
+    url.searchParams.set('rel', '0');
+    url.searchParams.set('controls', '1');
+    if (teaserMode) {
+      url.searchParams.set('start', '0');
+      url.searchParams.set('end', String(teaserSeconds));
     }
-    const url = new URL(trailerUrl);
-    url.searchParams.set('start', '0');
-    url.searchParams.set('end', String(teaserSeconds));
     return url.toString();
-  }, [teaserMode, trailerUrl]);
+  }, [currentItem?.trailer?.video_id, teaserMode]);
+
+  const trailerPlaybackUrl = useMemo(() => {
+    if (!trailerEmbedUrl) {
+      return null;
+    }
+    const url = new URL(trailerEmbedUrl);
+    url.searchParams.set('autoplay', isTrailerOpen ? '1' : '0');
+    return url.toString();
+  }, [isTrailerOpen, trailerEmbedUrl]);
+
+  useEffect(() => {
+    setIsTrailerOpen(false);
+  }, [currentItem?.title_id]);
 
   useEffect(() => {
     if (!identity || !currentItem) {
@@ -636,6 +654,28 @@ export default function Home() {
       console.warn('Share failed', err);
     }
   }, [currentItem, currentIndex, sendEvents]);
+
+  const handleOpenTrailer = useCallback(() => {
+    if (!currentItem || !trailerEmbedUrl) {
+      return;
+    }
+    setIsTrailerOpen(true);
+    sendEvents([
+      {
+        name: 'trailer_play',
+        title_id: currentItem.title_id,
+        position_in_feed: currentIndex + 1,
+        metadata: {
+          teaser_mode: teaserMode,
+          teaser_seconds: teaserSeconds,
+        },
+      },
+    ]);
+  }, [currentItem, currentIndex, sendEvents, teaserMode, trailerEmbedUrl]);
+
+  const handleCloseTrailer = useCallback(() => {
+    setIsTrailerOpen(false);
+  }, []);
 
   const handleToggleTeaser = () => {
     setTeaserMode((prev) => {
@@ -941,44 +981,48 @@ export default function Home() {
             {!loading && currentItem && (
               <>
                 <div className={styles.trailerFrame}>
-                  {currentItem.poster_url ? (
+                  {heroImage ? (
                     <Image
                       className={styles.mediaImage}
-                      src={currentItem.poster_url}
+                      src={heroImage}
                       alt={currentItem.title}
                       fill
                       sizes="(max-width: 900px) 100vw, 60vw"
                       priority
                     />
                   ) : (
-                    <div className={styles.mediaFallback}>Sin poster</div>
+                    <div className={styles.mediaFallback}>Sin imagen</div>
                   )}
-                  {trailerLink && currentItem && (
-                    <a
+                  {trailerEmbedUrl && !isTrailerOpen && (
+                    <button
                       className={styles.playButton}
-                      href={trailerLink}
-                      target="_blank"
-                      rel="noreferrer"
+                      type="button"
                       aria-label="Reproducir trailer"
-                      onClick={() =>
-                        sendEvents([
-                          {
-                            name: 'trailer_play',
-                            title_id: currentItem.title_id,
-                            position_in_feed: currentIndex + 1,
-                            metadata: {
-                              teaser_mode: teaserMode,
-                              teaser_seconds: teaserSeconds,
-                            },
-                          },
-                        ])
-                      }
+                      onClick={handleOpenTrailer}
                     >
                       <span className={styles.playIcon} aria-hidden="true">
                         ▶
                       </span>
                       Reproducir
-                    </a>
+                    </button>
+                  )}
+                  {trailerPlaybackUrl && isTrailerOpen && (
+                    <div className={styles.trailerPlayer}>
+                      <iframe
+                        className={styles.trailerIframe}
+                        src={trailerPlaybackUrl}
+                        title={`Trailer de ${currentItem?.title ?? ''}`}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                      <button
+                        className={styles.trailerClose}
+                        type="button"
+                        onClick={handleCloseTrailer}
+                      >
+                        Cerrar
+                      </button>
+                    </div>
                   )}
                   <div className={styles.mediaTag}>
                     {teaserMode ? `Teaser ${teaserSeconds}s` : 'Trailer'}
@@ -1085,33 +1129,20 @@ export default function Home() {
                   >
                     Compartir
                   </button>
-                  {trailerLink ? (
-                    <a
-                      className={styles.link}
-                      href={trailerLink}
-                      onClick={() => {
-                        if (!currentItem) {
-                          return;
-                        }
-                        sendEvents([
-                          {
-                            name: 'trailer_play',
-                            title_id: currentItem.title_id,
-                            position_in_feed: currentIndex + 1,
-                            metadata: {
-                              teaser_mode: teaserMode,
-                              teaser_seconds: teaserSeconds,
-                            },
-                          },
-                        ]);
-                      }}
-                      target="_blank"
-                      rel="noreferrer"
+                  {trailerEmbedUrl ? (
+                    <button
+                      className={styles.linkButton}
+                      type="button"
+                      onClick={
+                        isTrailerOpen ? handleCloseTrailer : handleOpenTrailer
+                      }
                     >
-                      {teaserMode
-                        ? `Ver trailer (${teaserSeconds}s)`
-                        : 'Ver trailer completo'}
-                    </a>
+                      {isTrailerOpen
+                        ? 'Cerrar trailer'
+                        : teaserMode
+                          ? `Ver trailer (${teaserSeconds}s)`
+                          : 'Ver trailer completo'}
+                    </button>
                   ) : (
                     <span className={styles.muted}>Sin trailer</span>
                   )}

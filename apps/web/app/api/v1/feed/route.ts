@@ -88,6 +88,7 @@ type FeedTitle = {
   genres: string[];
   overview: string | null;
   posterUrl: string | null;
+  backdropUrl: string | null;
   trailers: {
     source: string;
     sourceVideoId: string;
@@ -229,6 +230,7 @@ export async function GET(request: Request) {
       genres: title.genres,
       overview_short: toOverviewShort(title.overview),
       poster_url: title.posterUrl,
+      backdrop_url: title.backdropUrl,
       trailer: pickBestTrailer(title.trailers),
     }));
 

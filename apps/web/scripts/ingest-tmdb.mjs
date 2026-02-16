@@ -90,6 +90,93 @@ async function fetchDetails(type, id, apiKey) {
   );
 }
 
+async function fetchVideos(type, id, apiKey) {
+  return fetchJson(
+    buildUrl(`/${type}/${id}/videos`, {
+      api_key: apiKey,
+    }),
+  );
+}
+
+function mapVideoKind(type) {
+  const normalized = String(type ?? '').toLowerCase();
+  if (normalized.includes('trailer')) {
+    return 'trailer';
+  }
+  if (normalized.includes('teaser')) {
+    return 'teaser';
+  }
+  if (normalized.includes('clip')) {
+    return 'clip';
+  }
+  return null;
+}
+
+function getVideoPriority(kind) {
+  switch (kind) {
+    case 'trailer':
+      return 3;
+    case 'teaser':
+      return 2;
+    case 'clip':
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+function pickBestVideo(videos) {
+  const candidates = (videos ?? [])
+    .filter((video) => video?.site === 'YouTube' && video?.key)
+    .map((video) => {
+      const kind = mapVideoKind(video.type);
+      if (!kind) {
+        return null;
+      }
+      return {
+        source: 'youtube',
+        sourceVideoId: video.key,
+        kind,
+        language: video.iso_639_1 ?? null,
+        durationSeconds: null,
+        isOfficial: Boolean(video.official),
+        publishedAt: video.published_at ?? null,
+      };
+    })
+    .filter(Boolean);
+
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  const sorted = [...candidates].sort((a, b) => {
+    if (a.isOfficial !== b.isOfficial) {
+      return a.isOfficial ? -1 : 1;
+    }
+    const priorityDiff = getVideoPriority(b.kind) - getVideoPriority(a.kind);
+    if (priorityDiff !== 0) {
+      return priorityDiff;
+    }
+    const aTime = a.publishedAt ? Date.parse(a.publishedAt) : 0;
+    const bTime = b.publishedAt ? Date.parse(b.publishedAt) : 0;
+    return bTime - aTime;
+  });
+
+  const best = sorted[0];
+  if (!best) {
+    return null;
+  }
+
+  return {
+    source: best.source,
+    sourceVideoId: best.sourceVideoId,
+    kind: best.kind,
+    language: best.language,
+    durationSeconds: best.durationSeconds,
+    isOfficial: best.isOfficial,
+  };
+}
+
 function pickYear(dateValue) {
   if (!dateValue) {
     return null;
@@ -214,8 +301,12 @@ function createTmdbProvider(apiKey) {
       const limited = discovered.slice(0, limit);
       return runWithLimit(limited, concurrency, async (entry) => {
         const details = await fetchDetails(entry.type, entry.item.id, apiKey);
+        const videos = await fetchVideos(entry.type, entry.item.id, apiKey);
         const genreMap = genreMaps.get(entry.type) ?? new Map();
-        return mapToTitleData(entry, details, genreMap);
+        return {
+          titleData: await mapToTitleData(entry, details, genreMap),
+          trailer: pickBestVideo(videos?.results ?? []),
+        };
       });
     },
   };
@@ -258,17 +349,31 @@ async function main() {
   );
 
   let processed = 0;
-  for (const data of mapped) {
-    await prisma.title.upsert({
+  for (const entry of mapped) {
+    const stored = await prisma.title.upsert({
       where: {
         provider_providerId: {
-          provider: data.provider,
-          providerId: data.providerId,
+          provider: entry.titleData.provider,
+          providerId: entry.titleData.providerId,
         },
       },
-      update: data,
-      create: data,
+      update: entry.titleData,
+      create: entry.titleData,
     });
+    if (entry.trailer) {
+      await prisma.trailer.deleteMany({ where: { titleId: stored.id } });
+      await prisma.trailer.create({
+        data: {
+          titleId: stored.id,
+          source: entry.trailer.source,
+          sourceVideoId: entry.trailer.sourceVideoId,
+          kind: entry.trailer.kind,
+          language: entry.trailer.language,
+          durationSeconds: entry.trailer.durationSeconds,
+          isOfficial: entry.trailer.isOfficial,
+        },
+      });
+    }
     processed += 1;
   }
 
