@@ -96,6 +96,7 @@ export async function GET(request: Request) {
         genres: entry.title.genres,
         overview_short: toOverviewShort(entry.title.overview),
         poster_url: entry.title.posterUrl,
+        backdrop_url: entry.title.backdropUrl,
         trailer: pickBestTrailer(entry.title.trailers),
       })),
     }));

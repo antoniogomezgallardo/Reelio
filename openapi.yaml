@@ -228,6 +228,9 @@ components:
         poster_url:
           type: string
           nullable: true
+        backdrop_url:
+          type: string
+          nullable: true
         trailer:
           type: object
           nullable: true

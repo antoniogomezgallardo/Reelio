@@ -20,6 +20,7 @@ type FeedItem = {
   genres: string[];
   overview_short: string;
   poster_url: string | null;
+  backdrop_url: string | null;
   trailer: FeedTrailer | null;
 };
 
@@ -493,6 +494,7 @@ export default function Home() {
 
   const emptyState = !loading && items.length === 0 && !error;
   const currentItem = items[currentIndex] ?? null;
+  const heroImage = currentItem?.backdrop_url ?? currentItem?.poster_url;
   const trailerUrl = currentItem?.trailer?.video_id
     ? `https://www.youtube.com/watch?v=${currentItem.trailer.video_id}`
     : null;
@@ -941,17 +943,17 @@ export default function Home() {
             {!loading && currentItem && (
               <>
                 <div className={styles.trailerFrame}>
-                  {currentItem.poster_url ? (
+                  {heroImage ? (
                     <Image
                       className={styles.mediaImage}
-                      src={currentItem.poster_url}
+                      src={heroImage}
                       alt={currentItem.title}
                       fill
                       sizes="(max-width: 900px) 100vw, 60vw"
                       priority
                     />
                   ) : (
-                    <div className={styles.mediaFallback}>Sin poster</div>
+                    <div className={styles.mediaFallback}>Sin imagen</div>
                   )}
                   {trailerLink && currentItem && (
                     <a
